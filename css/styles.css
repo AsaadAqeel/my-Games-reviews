@@ -214,16 +214,18 @@ header .container {
 }
 
 .filters select {
-  padding: 0.5rem 0.75rem;
+  padding: 0.6rem 0.85rem;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   background: var(--bg-card);
   color: var(--text);
   font-family: inherit;
-  font-size: 0.8rem;
+  font-size: 0.82rem;
   cursor: pointer;
   min-width: 145px;
-  transition: border-color var(--transition), box-shadow var(--transition);
+  flex: 1 1 0;
+  min-height: 44px;
+  transition: border-color var(--transition), box-shadow var(--transition), background var(--transition);
   appearance: none;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%239a9a9a' d='M2 4l4 4 4-4'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
@@ -233,11 +235,40 @@ header .container {
 .filters select:hover { border-color: #3a3a3a; }
 .filters select:focus-visible { border-color: var(--accent); box-shadow: var(--focus-ring); }
 
+.filters__reset {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 0.6rem 1rem;
+  border: 1px solid rgba(229, 9, 20, 0.35);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--accent-soft);
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-weight: 500;
+  cursor: pointer;
+  min-height: 44px;
+  transition: background var(--transition), color var(--transition), border-color var(--transition);
+}
+.filters__reset:hover {
+  background: rgba(229, 9, 20, 0.12);
+  border-color: var(--accent-soft);
+  color: var(--accent);
+}
+.filters__reset:focus-visible {
+  box-shadow: var(--focus-ring);
+}
+.filters__reset.is-active {
+  display: inline-flex;
+}
+
 /* ===== Game Grid ===== */
 .game-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
-  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fill, minmax(clamp(150px, 42vw, 200px), 1fr));
+  gap: clamp(12px, 2.5vw, 18px);
   padding: 1.25rem 0 2rem;
 }
 
@@ -253,10 +284,27 @@ header .container {
   flex-direction: column;
   animation: cardIn 0.35s ease both;
 }
-.game-card:hover {
-  transform: translateY(-6px);
-  box-shadow: 0 10px 30px rgba(229, 9, 20, 0.18), 0 2px 8px rgba(0, 0, 0, 0.4);
-  border-color: rgba(229, 9, 20, 0.3);
+
+@media (hover: hover) and (pointer: fine) {
+  .game-card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 10px 30px rgba(229, 9, 20, 0.18), 0 2px 8px rgba(0, 0, 0, 0.4);
+    border-color: rgba(229, 9, 20, 0.3);
+  }
+}
+
+.game-card:active {
+  transform: scale(0.97);
+}
+
+.game-card:focus-within {
+  box-shadow: var(--focus-ring);
+}
+
+.game-card a:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+  border-radius: var(--radius);
 }
 
 @keyframes cardIn {
@@ -461,6 +509,51 @@ header .container {
   margin: 1rem;
 }
 
+.empty-state {
+  text-align: center;
+  padding: 4rem 1.5rem;
+  color: var(--text-muted);
+  font-size: 1.05rem;
+}
+
+.empty-state__title {
+  font-family: "Space Grotesk", "Inter", sans-serif;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 0.5rem;
+}
+
+.empty-state__reset {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.65rem 1.5rem;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  min-height: 44px;
+  margin-top: 1rem;
+  transition: background var(--transition), transform var(--transition), box-shadow var(--transition);
+}
+.empty-state__reset:hover {
+  background: var(--accent-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(229, 9, 20, 0.4);
+}
+.empty-state__reset:active {
+  transform: translateY(0);
+  box-shadow: none;
+}
+.empty-state__reset:focus-visible {
+  box-shadow: var(--focus-ring);
+}
+
 .spinner {
   width: 36px;
   height: 36px;
@@ -484,21 +577,28 @@ header .container {
 }
 
 .pagination button {
-  padding: 0.55rem 1.25rem;
+  padding: 0.65rem 1.5rem;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   background: var(--bg-card);
   color: var(--text);
   cursor: pointer;
   font-family: inherit;
-  font-size: 0.85rem;
+  font-size: 0.88rem;
   font-weight: 500;
+  min-height: 44px;
   transition: background var(--transition), transform var(--transition), box-shadow var(--transition), border-color var(--transition);
 }
 .pagination button:hover:not(:disabled) {
   background: var(--bg-surface);
   transform: translateY(-1px);
   border-color: #3a3a3a;
+}
+.pagination button:active:not(:disabled) {
+  transform: translateY(0);
+}
+.pagination button:focus-visible {
+  box-shadow: var(--focus-ring);
 }
 .pagination button:disabled { opacity: 0.35; cursor: not-allowed; }
 .pagination button.active {
@@ -1843,33 +1943,39 @@ footer a:hover { color: var(--accent-hover); }
     background: rgba(255, 255, 255, 0.05);
   }
 
-  .game-grid {
-    grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
-    gap: 1rem;
-  }
-
   .game-hero { aspect-ratio: 16/9; }
 
   .game-detail__title { font-size: 1.5rem; }
   .game-detail__scores { gap: 0.75rem; }
   .score-box { min-width: 100px; padding: 0.85rem 1rem; }
   .score-box__value { font-size: 1.4rem; }
-  .filters { gap: 0.4rem; }
-  .filters select { min-width: 125px; font-size: 0.78rem; }
+
+  .filters {
+    gap: 0.5rem;
+  }
+  .filters select {
+    flex: 1 1 calc(50% - 0.25rem);
+    min-width: 0;
+  }
 }
 
 /* ===== Responsive: Mobile (<=640px) ===== */
 @media (max-width: 640px) {
-  .game-grid {
-    grid-template-columns: 1fr;
-  }
-
   header .container {
     flex-wrap: nowrap;
   }
   .search-bar {
     flex: 1;
     min-width: 0;
+  }
+
+  .filters {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  .filters select {
+    flex: 1 1 100%;
+    width: 100%;
   }
 
   .curated-grid {
@@ -1907,6 +2013,14 @@ footer a:hover { color: var(--accent-hover); }
   .screenshots__grid { grid-template-columns: 1fr; }
   .game-card__body { padding: 0.85rem; }
   .review-form { padding: 1.15rem; }
+
+  .pagination {
+    gap: 0.6rem;
+  }
+  .pagination button {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -1917,6 +2031,6 @@ footer a:hover { color: var(--accent-hover); }
 
 @media (min-width: 1280px) {
   .game-grid {
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(auto-fill, minmax(clamp(150px, 42vw, 200px), 1fr));
   }
 }

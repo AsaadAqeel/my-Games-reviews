@@ -759,6 +759,7 @@ async function initCatalog() {
   const genreFilter = document.getElementById("genre-filter");
   const platformFilter = document.getElementById("platform-filter");
   const sortSelect = document.getElementById("sort-select");
+  const resetBtn = document.getElementById("filters-reset");
 
   let currentPage = 1;
   let currentSearch = getParam("search") || "";
@@ -767,6 +768,41 @@ async function initCatalog() {
   let currentOrder = "-rating";
   let totalResults = 0;
   let userAverages = {};
+
+  function renderSkeletons(count) {
+    gridEl.innerHTML = "";
+    for (var i = 0; i < count; i++) {
+      var card = document.createElement("div");
+      card.className = "skeleton-card";
+      card.innerHTML = '<div class="skeleton-card__image skeleton"></div>' +
+        '<div class="skeleton-card__body">' +
+        '<div class="skeleton-card__line skeleton"></div>' +
+        '<div class="skeleton-card__line skeleton skeleton-card__line--short"></div>' +
+        '<div class="skeleton-card__line skeleton skeleton-card__line--xs"></div>' +
+        '</div>';
+      gridEl.appendChild(card);
+    }
+  }
+
+  function updateResetBtn() {
+    var hasFilters = currentGenre !== "" || currentPlatform !== "" || currentSearch !== "" || currentOrder !== "-rating";
+    resetBtn.classList.toggle("is-active", hasFilters);
+  }
+
+  function resetAllFilters() {
+    genreFilter.value = "";
+    platformFilter.value = "";
+    sortSelect.value = "-rating";
+    searchInput.value = "";
+    currentGenre = "";
+    currentPlatform = "";
+    currentOrder = "-rating";
+    currentSearch = "";
+    updateResetBtn();
+    loadGames(1);
+  }
+
+  resetBtn.addEventListener("click", resetAllFilters);
 
   if (currentSearch) {
     searchInput.value = currentSearch;
@@ -795,7 +831,7 @@ async function initCatalog() {
     currentPage = page;
     userAverages = getAllAverages();
 
-    showLoading(gridEl);
+    renderSkeletons(12);
     statusEl.innerHTML = "";
     paginationEl.innerHTML = "";
 
@@ -818,11 +854,25 @@ async function initCatalog() {
       }
 
       if (games.length === 0) {
-        if (currentSearch) {
-          showEmpty(gridEl, "No games found for '" + currentSearch + "'. Check the spelling or try a shorter title.");
-        } else {
-          showEmpty(gridEl, "No games match your search.");
-        }
+        gridEl.innerHTML = "";
+        var emptyDiv = document.createElement("div");
+        emptyDiv.className = "empty-state";
+        var emptyTitle = document.createElement("div");
+        emptyTitle.className = "empty-state__title";
+        emptyTitle.textContent = currentSearch
+          ? "No games found for '" + currentSearch + "'"
+          : "No games match your filters";
+        emptyDiv.appendChild(emptyTitle);
+        var emptyDesc = document.createElement("p");
+        emptyDesc.textContent = "Try adjusting your search or filters to find what you're looking for.";
+        emptyDiv.appendChild(emptyDesc);
+        var emptyReset = document.createElement("button");
+        emptyReset.type = "button";
+        emptyReset.className = "empty-state__reset";
+        emptyReset.textContent = "Reset filters";
+        emptyReset.addEventListener("click", resetAllFilters);
+        emptyDiv.appendChild(emptyReset);
+        statusEl.appendChild(emptyDiv);
         return;
       }
 
@@ -935,12 +985,14 @@ async function initCatalog() {
   // Search
   const debouncedSearch = debounce(() => {
     currentSearch = searchInput.value.trim();
+    updateResetBtn();
     loadGames(1);
   }, 400);
 
   searchInput.addEventListener("input", debouncedSearch);
   searchBtn.addEventListener("click", () => {
     currentSearch = searchInput.value.trim();
+    updateResetBtn();
     loadGames(1);
   });
   searchInput.addEventListener("keydown", (e) => {
@@ -953,20 +1005,24 @@ async function initCatalog() {
   // Filters
   genreFilter.addEventListener("change", () => {
     currentGenre = genreFilter.value;
+    updateResetBtn();
     loadGames(1);
   });
 
   platformFilter.addEventListener("change", () => {
     currentPlatform = platformFilter.value;
+    updateResetBtn();
     loadGames(1);
   });
 
   sortSelect.addEventListener("change", () => {
     currentOrder = sortSelect.value;
+    updateResetBtn();
     loadGames(1);
   });
 
   // Initial load
+  updateResetBtn();
   loadGames(1);
 }
 
