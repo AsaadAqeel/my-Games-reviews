@@ -322,6 +322,9 @@ function createLightbox(images, startIndex = 0) {
 
 // ===================== HOMEPAGE CURATED SECTIONS =====================
 
+// Set to a RAWG game id to override auto-selection (null = auto)
+const FEATURED_ID = null;
+
 function renderCuratedCard(game) {
   const link = document.createElement("a");
   link.href = "game.html?id=" + game.id;
@@ -402,14 +405,161 @@ async function loadSection({ gridSelector, ordering, pageSize = 6 }) {
   }
 }
 
+async function loadFeaturedHero() {
+  const heroEl = document.getElementById("featured-hero");
+  if (!heroEl) return;
+
+  let game = null;
+
+  try {
+    if (FEATURED_ID) {
+      game = await getGameDetail(FEATURED_ID);
+    } else {
+      const data = await searchGames({ ordering: "-rating", pageSize: 40 });
+      const candidates = data.results || [];
+
+      game = candidates.find(
+        (g) => g.ratings_count >= 500 && g.background_image
+      );
+
+      if (!game) {
+        game = candidates.find((g) => g.background_image);
+      }
+
+      if (game && game.id) {
+        try {
+          game = await getGameDetail(game.id);
+        } catch {
+          // Use list-level data if detail fetch fails
+        }
+      }
+    }
+  } catch {
+    heroEl.classList.add("featured-hero--hidden");
+    return;
+  }
+
+  if (!game || !game.background_image) {
+    heroEl.classList.add("featured-hero--hidden");
+    return;
+  }
+
+  heroEl.innerHTML = "";
+
+  const img = document.createElement("img");
+  img.className = "featured-hero__img";
+  img.src = game.background_image;
+  img.alt = game.name;
+  img.onerror = function () {
+    heroEl.classList.add("featured-hero--hidden");
+  };
+  heroEl.appendChild(img);
+
+  const overlay = document.createElement("div");
+  overlay.className = "featured-hero__overlay";
+  heroEl.appendChild(overlay);
+
+  const content = document.createElement("div");
+  content.className = "featured-hero__content";
+
+  const label = document.createElement("span");
+  label.className = "featured-hero__label";
+  label.textContent = "Featured";
+  content.appendChild(label);
+
+  const title = document.createElement("h2");
+  title.className = "featured-hero__title";
+  title.textContent = game.name;
+  content.appendChild(title);
+
+  const meta = document.createElement("div");
+  meta.className = "featured-hero__meta";
+
+  if (game.rating != null) {
+    const rating = document.createElement("span");
+    rating.className = "featured-hero__rating";
+    rating.textContent = "\u2605 " + game.rating.toFixed(1);
+    meta.appendChild(rating);
+  }
+
+  const year = game.released ? game.released.substring(0, 4) : null;
+  const genre =
+    game.genres && game.genres.length > 0 ? game.genres[0].name : null;
+  const yearGenre = [year, genre].filter(Boolean).join(" \u00B7 ");
+  if (yearGenre) {
+    const yearGenreEl = document.createElement("span");
+    yearGenreEl.className = "featured-hero__year-genre";
+    yearGenreEl.textContent = yearGenre;
+    meta.appendChild(yearGenreEl);
+  }
+
+  content.appendChild(meta);
+
+  if (game.description_raw) {
+    const desc = document.createElement("p");
+    desc.className = "featured-hero__desc";
+    const trimmed =
+      game.description_raw.length > 110
+        ? game.description_raw.substring(0, 110) + "\u2026"
+        : game.description_raw;
+    desc.textContent = trimmed;
+    content.appendChild(desc);
+  }
+
+  const btn = document.createElement("a");
+  btn.className = "featured-hero__btn";
+  btn.href = "game.html?id=" + game.id;
+  btn.innerHTML =
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>';
+  btn.appendChild(document.createTextNode(" View game"));
+  content.appendChild(btn);
+
+  heroEl.appendChild(content);
+}
+
 function initHomepageSections() {
-  loadSection({ gridSelector: '[data-grid="top-rated"]', ordering: "-rating", pageSize: 6 });
-  loadSection({ gridSelector: '[data-grid="popular"]', ordering: "-added", pageSize: 6 });
+  loadFeaturedHero();
+  loadSection({ gridSelector: '[data-grid="top-rated"]', ordering: "-rating", pageSize: 18 });
+  loadSection({ gridSelector: '[data-grid="popular"]', ordering: "-added", pageSize: 18 });
 
   const allGamesBtn = document.getElementById("all-games-btn");
   if (allGamesBtn) {
     allGamesBtn.href = "games.html";
   }
+
+  document.querySelectorAll(".curated-section").forEach(initSectionScroll);
+}
+
+function initSectionScroll(section) {
+  const grid = section.querySelector(".curated-grid");
+  const arrows = section.querySelectorAll(".curated-section__arrow");
+  if (!grid || arrows.length < 2) return;
+
+  const leftArrow = arrows[0];
+  const rightArrow = arrows[1];
+
+  function updateArrows() {
+    const sl = grid.scrollLeft;
+    const maxScroll = grid.scrollWidth - grid.clientWidth;
+    leftArrow.disabled = sl <= 0;
+    rightArrow.disabled = sl >= maxScroll - 1;
+  }
+
+  leftArrow.addEventListener("click", () => {
+    grid.scrollBy({ left: -grid.clientWidth * 0.9, behavior: "smooth" });
+  });
+
+  rightArrow.addEventListener("click", () => {
+    grid.scrollBy({ left: grid.clientWidth * 0.9, behavior: "smooth" });
+  });
+
+  grid.addEventListener("scroll", updateArrows, { passive: true });
+
+  // Initial state + recalc after images load
+  updateArrows();
+  grid.querySelectorAll("img").forEach(img => {
+    if (!img.complete) img.addEventListener("load", updateArrows, { once: true });
+  });
 }
 
 // ===================== CATALOG PAGE =====================

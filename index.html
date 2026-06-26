@@ -35,9 +35,26 @@
   </header>
 
   <main class="container">
+    <!-- Featured Hero Banner -->
+    <div id="featured-hero" class="featured-hero" aria-label="Featured game">
+      <div class="featured-hero__placeholder">
+        <div class="spinner"></div>
+      </div>
+    </div>
+
     <!-- Top Rated Section -->
     <section class="curated-section">
-      <h2 class="curated-section__title">Top rated</h2>
+      <div class="curated-section__header">
+        <h2 class="curated-section__title">Top rated</h2>
+        <div class="curated-section__arrows">
+          <button class="curated-section__arrow" data-dir="-1" aria-label="Scroll left" disabled>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+          </button>
+          <button class="curated-section__arrow" data-dir="1" aria-label="Scroll right">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+          </button>
+        </div>
+      </div>
       <div class="curated-grid" data-grid="top-rated">
         <a href="#" class="curated-card">
           <div class="curated-card__cover">
@@ -104,7 +121,17 @@
 
     <!-- Popular Section -->
     <section class="curated-section">
-      <h2 class="curated-section__title">Popular</h2>
+      <div class="curated-section__header">
+        <h2 class="curated-section__title">Popular</h2>
+        <div class="curated-section__arrows">
+          <button class="curated-section__arrow" data-dir="-1" aria-label="Scroll left" disabled>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+          </button>
+          <button class="curated-section__arrow" data-dir="1" aria-label="Scroll right">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+          </button>
+        </div>
+      </div>
       <div class="curated-grid" data-grid="popular">
         <a href="#" class="curated-card">
           <div class="curated-card__cover">
