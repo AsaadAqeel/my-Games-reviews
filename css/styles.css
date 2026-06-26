@@ -1498,7 +1498,7 @@ footer a:hover { color: var(--accent-hover); }
 
 .curated-card {
   display: block;
-  flex: 0 0 190px;
+  flex: 0 0 200px;
   text-decoration: none;
   color: inherit;
   border-radius: 12px;
