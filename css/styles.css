@@ -1242,6 +1242,59 @@ footer a:hover { color: var(--accent-hover); }
 }
 .back-link:hover { color: var(--accent-soft); }
 
+/* ===== Delete Review Button ===== */
+.delete-review-btn {
+  display: inline-block;
+  padding: 0.35rem 0.85rem;
+  border: 1px solid rgba(229, 9, 20, 0.35);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--accent-soft);
+  font-family: inherit;
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  margin-top: 0.75rem;
+  transition: background var(--transition), color var(--transition), border-color var(--transition);
+}
+.delete-review-btn:hover {
+  background: rgba(229, 9, 20, 0.12);
+  border-color: var(--accent-soft);
+  color: var(--accent);
+}
+
+/* ===== My Reviews Card ===== */
+.my-reviews-card__game-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+  text-decoration: none;
+  color: inherit;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.65rem;
+  border-bottom: 1px solid var(--border);
+}
+.my-reviews-card__game-link:hover { color: inherit; }
+
+.my-reviews-card__thumb {
+  width: 56px;
+  height: 32px;
+  object-fit: cover;
+  border-radius: 4px;
+  flex-shrink: 0;
+  background: var(--bg-surface);
+}
+
+.my-reviews-card__game-name {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--accent-soft);
+  transition: color var(--transition);
+}
+.my-reviews-card__game-link:hover .my-reviews-card__game-name {
+  color: var(--accent-hover);
+}
+
 /* ===== Reduced Motion ===== */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {

@@ -1,5 +1,5 @@
 import { searchGames, getGameDetail, getGameScreenshots, getGenres, getPlatforms } from "./rawg.js";
-import { getReviews, addReview, getAverageRating, getReviewCount, getAllAverages, getPlayedGames, isPlayed, togglePlayed, removePlayed, getLists, createList, renameList, deleteList, addGameToList, removeGameFromList, isGameInList, getFavorites, isFavorite, toggleFavorite, removeFavorite } from "./storage.js";
+import { getReviews, addReview, deleteReview, getAllUserReviews, getAverageRating, getReviewCount, getAllAverages, getPlayedGames, isPlayed, togglePlayed, removePlayed, getLists, createList, renameList, deleteList, addGameToList, removeGameFromList, isGameInList, getFavorites, isFavorite, toggleFavorite, removeFavorite } from "./storage.js";
 
 // ===================== UTILITIES =====================
 
@@ -584,12 +584,14 @@ async function initGameDetail() {
   userBox.appendChild(userLabel);
   const userValue = document.createElement("div");
   userValue.className = "score-box__value user";
+  userValue.id = "user-score-value";
   const avg = getAverageRating(gameId);
   const count = getReviewCount(gameId);
   userValue.textContent = avg != null ? avg.toFixed(1) : "N/A";
   userBox.appendChild(userValue);
   const userCount = document.createElement("div");
   userCount.className = "score-box__count";
+  userCount.id = "user-score-count";
   userCount.textContent = count + " on-site review" + (count !== 1 ? "s" : "");
   userBox.appendChild(userCount);
   scoresContainer.appendChild(userBox);
@@ -652,28 +654,33 @@ async function initGameDetail() {
   listMenu.style.display = "none";
   listDropdown.appendChild(listMenu);
 
-  function renderListMenu() {
-    listMenu.innerHTML = "";
-    const lists = getLists();
+  // PRIMARY DEFENSE: stop all clicks/mousedowns inside the menu from bubbling
+  listMenu.addEventListener("click", function(e) { e.stopPropagation(); });
+  listMenu.addEventListener("mousedown", function(e) { e.stopPropagation(); });
 
-    lists.forEach(list => {
-      const item = document.createElement("label");
+  function renderListMenu() {
+    // Clear and rebuild the list rows + create input
+    listMenu.innerHTML = "";
+    var lists = getLists();
+
+    lists.forEach(function(list) {
+      var item = document.createElement("label");
       item.className = "list-menu__item";
       item.setAttribute("role", "menuitemcheckbox");
 
-      const checkbox = document.createElement("input");
+      var checkbox = document.createElement("input");
       checkbox.type = "checkbox";
       checkbox.checked = isGameInList(list.id, gameId);
       checkbox.setAttribute("aria-label", list.name);
 
-      const nameSpan = document.createElement("span");
+      var nameSpan = document.createElement("span");
       nameSpan.textContent = list.name;
 
       item.appendChild(checkbox);
       item.appendChild(nameSpan);
 
-      checkbox.addEventListener("change", () => {
-        const snapshot = {
+      checkbox.addEventListener("change", function() {
+        var snapshot = {
           id: gameData.id,
           name: gameData.name,
           image: gameData.background_image || "",
@@ -690,17 +697,17 @@ async function initGameDetail() {
       listMenu.appendChild(item);
     });
 
-    // Create new list input
-    const createRow = document.createElement("div");
+    // Create new list input row
+    var createRow = document.createElement("div");
     createRow.className = "list-menu__create";
 
-    const createInput = document.createElement("input");
+    var createInput = document.createElement("input");
     createInput.type = "text";
     createInput.placeholder = "New list name...";
     createInput.maxLength = 40;
     createInput.setAttribute("aria-label", "New list name");
 
-    const createBtn = document.createElement("button");
+    var createBtn = document.createElement("button");
     createBtn.type = "button";
     createBtn.className = "list-menu__create-btn";
     createBtn.textContent = "+";
@@ -708,7 +715,7 @@ async function initGameDetail() {
 
     function doCreate(e) {
       if (e) e.stopPropagation();
-      const name = createInput.value.trim();
+      var name = createInput.value.trim();
       if (!name) return;
       createList(name);
       createInput.value = "";
@@ -716,7 +723,7 @@ async function initGameDetail() {
     }
 
     createBtn.addEventListener("click", doCreate);
-    createInput.addEventListener("keydown", (e) => {
+    createInput.addEventListener("keydown", function(e) {
       if (e.key === "Enter") {
         e.preventDefault();
         doCreate(e);
@@ -732,10 +739,12 @@ async function initGameDetail() {
     listMenu.style.display = "none";
     document.removeEventListener("click", handleOutsideClick);
     document.removeEventListener("keydown", handleEscapeKey);
+    listToggle.focus();
   }
 
+  // BACKUP GUARD: use closest() against live DOM, never a captured variable
   function handleOutsideClick(e) {
-    if (listMenu.contains(e.target) || listToggle.contains(e.target)) return;
+    if (e.target.closest(".list-menu") || e.target.closest(".list-toggle")) return;
     closeListMenu();
   }
 
@@ -743,9 +752,9 @@ async function initGameDetail() {
     if (e.key === "Escape") closeListMenu();
   }
 
-  listToggle.addEventListener("click", (e) => {
+  listToggle.addEventListener("click", function(e) {
     e.stopPropagation();
-    const isOpen = listMenu.style.display !== "none";
+    var isOpen = listMenu.style.display !== "none";
     if (isOpen) {
       closeListMenu();
     } else {
@@ -935,7 +944,9 @@ function renderReviewsSection(container, gameId) {
       rating,
       title: titleVal,
       body: bodyVal,
-      name: nameVal || "Anonymous"
+      name: nameVal || "Anonymous",
+      gameName: gameData.name,
+      gameImage: gameData.background_image || ""
     });
 
     // Reset form
@@ -995,6 +1006,24 @@ function renderReviewsSection(container, gameId) {
       body.className = "review-card__body";
       body.textContent = review.body;
       card.appendChild(body);
+
+      const deleteBtn = document.createElement("button");
+      deleteBtn.type = "button";
+      deleteBtn.className = "delete-review-btn";
+      deleteBtn.textContent = "Delete My Review";
+      deleteBtn.addEventListener("click", () => {
+        if (confirm("Delete this review?")) {
+          deleteReview(gameId, review.id);
+          renderReviewsSection(container, gameId);
+          const newAvg = getAverageRating(gameId);
+          const newCount = getReviewCount(gameId);
+          const scoreVal = document.getElementById("user-score-value");
+          const scoreCnt = document.getElementById("user-score-count");
+          if (scoreVal) scoreVal.textContent = newAvg != null ? newAvg.toFixed(1) : "N/A";
+          if (scoreCnt) scoreCnt.textContent = newCount + " on-site review" + (newCount !== 1 ? "s" : "");
+        }
+      });
+      card.appendChild(deleteBtn);
 
       container.appendChild(card);
     }
@@ -1359,6 +1388,95 @@ function initListsPage() {
   render();
 }
 
+// ===================== MY REVIEWS PAGE =====================
+
+function initMyReviewsPage() {
+  const container = document.getElementById("my-reviews-list");
+
+  function render() {
+    const reviews = getAllUserReviews();
+    container.innerHTML = "";
+
+    if (reviews.length === 0) {
+      const emptyMsg = document.createElement("div");
+      emptyMsg.className = "status-message";
+      emptyMsg.textContent = "You haven\u2019t written any reviews yet.";
+      container.appendChild(emptyMsg);
+      return;
+    }
+
+    for (const review of reviews) {
+      const card = document.createElement("div");
+      card.className = "review-card my-reviews-card";
+
+      const gameLink = document.createElement("a");
+      gameLink.href = "game.html?id=" + review.gameId;
+      gameLink.className = "my-reviews-card__game-link";
+
+      if (review.gameImage) {
+        const thumb = document.createElement("img");
+        thumb.className = "my-reviews-card__thumb";
+        thumb.src = review.gameImage;
+        thumb.alt = review.gameName;
+        thumb.loading = "lazy";
+        thumb.onerror = function() { this.style.display = "none"; };
+        gameLink.appendChild(thumb);
+      }
+
+      const gameNameEl = document.createElement("span");
+      gameNameEl.className = "my-reviews-card__game-name";
+      gameNameEl.textContent = review.gameName;
+      gameLink.appendChild(gameNameEl);
+
+      card.appendChild(gameLink);
+
+      const header = document.createElement("div");
+      header.className = "review-card__header";
+
+      const author = document.createElement("span");
+      author.className = "review-card__author";
+      author.textContent = review.name;
+      header.appendChild(author);
+
+      const date = document.createElement("span");
+      date.className = "review-card__date";
+      date.textContent = formatDate(review.date);
+      header.appendChild(date);
+
+      card.appendChild(header);
+
+      const starsEl = renderStaticStars(review.rating);
+      card.appendChild(starsEl);
+
+      const reviewTitle = document.createElement("div");
+      reviewTitle.className = "review-card__title";
+      reviewTitle.textContent = review.title;
+      card.appendChild(reviewTitle);
+
+      const body = document.createElement("div");
+      body.className = "review-card__body";
+      body.textContent = review.body;
+      card.appendChild(body);
+
+      const deleteBtn = document.createElement("button");
+      deleteBtn.type = "button";
+      deleteBtn.className = "delete-review-btn";
+      deleteBtn.textContent = "Delete My Review";
+      deleteBtn.addEventListener("click", () => {
+        if (confirm("Delete this review?")) {
+          deleteReview(review.gameId, review.id);
+          render();
+        }
+      });
+      card.appendChild(deleteBtn);
+
+      container.appendChild(card);
+    }
+  }
+
+  render();
+}
+
 // ===================== HEADER NAV =====================
 
 function initHeaderNav() {
@@ -1465,6 +1583,8 @@ document.addEventListener("DOMContentLoaded", () => {
     initFavoritesPage();
   } else if (path.endsWith("lists.html")) {
     initListsPage();
+  } else if (path.endsWith("my-reviews.html")) {
+    initMyReviewsPage();
   } else if (isCatalogPage()) {
     initCatalog();
   } else if (path.endsWith("game.html")) {

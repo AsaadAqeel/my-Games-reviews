@@ -31,10 +31,43 @@ export function addReview(gameId, review) {
     title: review.title,
     body: review.body,
     name: review.name || "Anonymous",
+    gameName: review.gameName || "",
+    gameImage: review.gameImage || "",
     date: Date.now()
   });
   saveAllReviews(all);
   return all[gameId];
+}
+
+export function deleteReview(gameId, reviewId) {
+  const all = getAllReviews();
+  if (!all[gameId]) return;
+  all[gameId] = all[gameId].filter(r => r.id !== reviewId);
+  if (all[gameId].length === 0) {
+    delete all[gameId];
+  }
+  saveAllReviews(all);
+}
+
+export function getAllUserReviews() {
+  const all = getAllReviews();
+  const flat = [];
+  for (const [gameId, reviews] of Object.entries(all)) {
+    for (const review of reviews) {
+      flat.push({
+        gameId,
+        gameName: review.gameName || "Game #" + gameId,
+        gameImage: review.gameImage || "",
+        id: review.id,
+        rating: review.rating,
+        title: review.title,
+        body: review.body,
+        name: review.name,
+        date: review.date
+      });
+    }
+  }
+  return flat.sort((a, b) => b.date - a.date);
 }
 
 export function getAverageRating(gameId) {
