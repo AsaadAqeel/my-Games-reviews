@@ -256,7 +256,7 @@ header .container {
 .game-card:hover {
   transform: translateY(-6px);
   box-shadow: 0 10px 30px rgba(229, 9, 20, 0.18), 0 2px 8px rgba(0, 0, 0, 0.4);
-  border-color: rgba(229, 9, 20, 0.25);
+  border-color: rgba(229, 9, 20, 0.3);
 }
 
 @keyframes cardIn {
@@ -390,6 +390,60 @@ header .container {
   0%   { background-position: -200% 0; }
   100% { background-position: 200% 0; }
 }
+
+/* ===== Image Fade-In ===== */
+.curated-card__cover img,
+.game-card__image,
+.featured-hero__img {
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+
+.curated-card__cover img.img-loaded,
+.game-card__image.img-loaded,
+.featured-hero__img.img-loaded {
+  opacity: 1;
+}
+
+/* Fallback background on error */
+.curated-card__cover img.img-error,
+.game-card__image.img-error {
+  opacity: 1;
+  background: var(--bg-surface);
+}
+
+/* ===== Shelf Skeleton Cards ===== */
+.skeleton-shelf-card {
+  flex: 0 0 clamp(150px, 42vw, 210px);
+  scroll-snap-align: start;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+
+.skeleton-shelf-card__image {
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  background: linear-gradient(90deg, var(--bg-card) 25%, rgba(255,255,255,0.04) 50%, var(--bg-card) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.6s ease-in-out infinite;
+}
+
+.skeleton-shelf-card__body {
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.skeleton-shelf-card__line {
+  height: 12px;
+  border-radius: 6px;
+  background: linear-gradient(90deg, var(--bg-card) 25%, rgba(255,255,255,0.04) 50%, var(--bg-card) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.6s ease-in-out infinite;
+}
+.skeleton-shelf-card__line--short { width: 60%; }
 
 /* ===== Loading / Error / Empty ===== */
 .status-message {
@@ -1320,6 +1374,52 @@ footer a:hover { color: var(--accent-hover); }
   background: var(--bg-surface);
 }
 
+.featured-hero__skeleton {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: clamp(18px, 5vw, 32px);
+}
+
+.featured-hero__skeleton-block {
+  border-radius: 8px;
+  background: linear-gradient(90deg, var(--bg-card) 25%, rgba(255,255,255,0.04) 50%, var(--bg-card) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.6s ease-in-out infinite;
+}
+
+.featured-hero__skeleton-block--label {
+  width: 80px;
+  height: 12px;
+  margin-bottom: 16px;
+}
+
+.featured-hero__skeleton-block--title {
+  width: clamp(180px, 40vw, 320px);
+  height: clamp(24px, 5vw, 38px);
+  margin-bottom: 16px;
+}
+
+.featured-hero__skeleton-block--meta {
+  width: 140px;
+  height: 14px;
+  margin-bottom: 18px;
+}
+
+.featured-hero__skeleton-block--desc {
+  width: clamp(200px, 35vw, 280px);
+  height: 14px;
+  margin-bottom: 20px;
+}
+
+.featured-hero__skeleton-block--btn {
+  width: 140px;
+  height: 42px;
+  border-radius: 10px;
+}
+
 .featured-hero__img {
   position: absolute;
   inset: 0;
@@ -1335,6 +1435,7 @@ footer a:hover { color: var(--accent-hover); }
   position: absolute;
   inset: 0;
   pointer-events: none;
+  background: linear-gradient(135deg, rgba(9,9,11,0.88) 0%, rgba(9,9,11,0.72) 35%, rgba(9,9,11,0.25) 65%, transparent 100%);
 }
 
 .featured-hero__content {
@@ -1350,7 +1451,7 @@ footer a:hover { color: var(--accent-hover); }
   font-weight: 600;
   letter-spacing: 1px;
   text-transform: uppercase;
-  color: #ef4444;
+  color: var(--accent);
   margin-bottom: 14px;
 }
 
@@ -1396,7 +1497,7 @@ footer a:hover { color: var(--accent-hover); }
   align-items: center;
   gap: 8px;
   padding: 12px 22px;
-  background: #ef4444;
+  background: var(--accent);
   color: #fff;
   border: none;
   border-radius: 10px;
@@ -1405,16 +1506,24 @@ footer a:hover { color: var(--accent-hover); }
   font-weight: 600;
   text-decoration: none;
   cursor: pointer;
-  transition: background 0.2s ease;
+  transition: background 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
 }
 
 .featured-hero__btn:hover {
-  background: #dc2626;
+  background: var(--accent-hover);
   color: #fff;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(229, 9, 20, 0.4);
 }
 
 .featured-hero__btn:active {
   transform: translateY(0);
+  box-shadow: none;
+}
+
+.featured-hero__btn:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
 }
 
 .featured-hero__btn svg {
@@ -1444,16 +1553,26 @@ footer a:hover { color: var(--accent-hover); }
   background: transparent;
   padding: 0;
   cursor: pointer;
-  transition: background 0.2s ease, border-color 0.2s ease;
+  transition: background 0.2s ease, border-color 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
 }
 
 .featured-hero__dot:hover {
   border-color: #fff;
+  transform: scale(1.2);
+}
+
+.featured-hero__dot:active {
+  transform: scale(0.9);
+}
+
+.featured-hero__dot:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.6);
 }
 
 .featured-hero__dot--active {
-  background: #ef4444;
-  border-color: #ef4444;
+  background: var(--accent);
+  border-color: var(--accent);
 }
 
 /* ===== Curated Homepage Sections ===== */
@@ -1493,11 +1612,21 @@ footer a:hover { color: var(--accent-hover); }
   background: var(--bg-surface);
   color: var(--text);
   cursor: pointer;
-  transition: opacity 0.2s ease, border-color 0.2s ease;
+  transition: opacity 0.2s ease, border-color 0.2s ease, background 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
 }
 
 .curated-section__arrow:hover:not([disabled]) {
   border-color: #555;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.curated-section__arrow:active:not([disabled]) {
+  transform: scale(0.92);
+}
+
+.curated-section__arrow:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
 }
 
 .curated-section__arrow[disabled] {
@@ -1534,12 +1663,24 @@ footer a:hover { color: var(--accent-hover); }
   border-radius: 12px;
   overflow: hidden;
   border: 1px solid var(--border);
-  transition: transform 0.22s ease, border-color 0.22s ease;
+  transition: transform 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease;
 }
 
-.curated-card:hover {
-  transform: translateY(-3px);
-  border-color: #ef4444;
+@media (hover: hover) and (pointer: fine) {
+  .curated-card:hover {
+    transform: translateY(-4px);
+    border-color: rgba(229, 9, 20, 0.4);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(229, 9, 20, 0.15);
+  }
+}
+
+.curated-card:active {
+  transform: scale(0.97);
+}
+
+.curated-card:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
 }
 
 .curated-card__cover {
@@ -1620,7 +1761,7 @@ footer a:hover { color: var(--accent-hover); }
   gap: 0.45rem;
   padding: 12px 22px;
   min-height: 44px;
-  background: #ef4444;
+  background: var(--accent);
   color: #fff;
   border: none;
   border-radius: 8px;
@@ -1629,18 +1770,24 @@ footer a:hover { color: var(--accent-hover); }
   font-weight: 600;
   text-decoration: none;
   cursor: pointer;
-  transition: background 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+  transition: background 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
 }
 
 .all-games-btn:hover {
-  background: #dc2626;
+  background: var(--accent-hover);
   color: #fff;
   transform: translateY(-1px);
-  box-shadow: 0 4px 14px rgba(239, 68, 68, 0.35);
+  box-shadow: 0 4px 14px rgba(229, 9, 20, 0.4);
 }
 
 .all-games-btn:active {
   transform: translateY(0);
+  box-shadow: none;
+}
+
+.all-games-btn:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
 }
 
 /* ===== Reduced Motion ===== */
@@ -1649,10 +1796,17 @@ footer a:hover { color: var(--accent-hover); }
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
   .game-card:hover { transform: none; }
   .game-card:hover .game-card__image { transform: none; }
   .curated-card:hover { transform: none; }
+  .curated-card:active { transform: none; }
+  .curated-section__arrow:active:not([disabled]) { transform: none; }
+  .featured-hero__dot:hover { transform: none; }
+  .featured-hero__dot:active { transform: none; }
+  .featured-hero__btn:hover { transform: none; }
+  .all-games-btn:hover { transform: none; }
   .lightbox { animation: none; }
 }
 

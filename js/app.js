@@ -341,7 +341,6 @@ const FEATURED = [
   { slug: "call-of-duty",              tagline: "Fast, loud, relentless first-person warfare." },
 ];
 const HERO_INTERVAL_MS = 10000;
-const HERO_OVERLAY_ALPHA = 0.62;
 
 function renderCuratedCard(game) {
   const link = document.createElement("a");
@@ -356,7 +355,16 @@ function renderCuratedCard(game) {
   img.src = game.background_image || "";
   img.alt = game.name;
   img.loading = "lazy";
-  img.onerror = function () { this.style.display = "none"; };
+  img.onerror = function () {
+    this.classList.add("img-error");
+    this.style.display = "none";
+  };
+  img.onload = function () {
+    this.classList.add("img-loaded");
+  };
+  if (img.complete && img.naturalWidth > 0) {
+    img.classList.add("img-loaded");
+  }
   cover.appendChild(img);
 
   const rating = document.createElement("span");
@@ -389,14 +397,6 @@ async function loadSection({ gridSelector, ordering, target = SHELF_TARGET, minR
   if (!grid) return;
 
   grid.innerHTML = "";
-  const spinner = document.createElement("div");
-  spinner.className = "spinner";
-  grid.appendChild(spinner);
-
-  const loadingMsg = document.createElement("p");
-  loadingMsg.className = "status-message";
-  loadingMsg.textContent = "Loading\u2026";
-  grid.appendChild(loadingMsg);
 
   var accumulated = [];
   var seen = new Set();
@@ -451,6 +451,20 @@ async function loadFeaturedHero() {
   const heroEl = document.getElementById("featured-hero");
   if (!heroEl) return;
 
+  // Check reduced motion preference
+  const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  // Render skeleton placeholder
+  heroEl.innerHTML = "";
+  const skeleton = document.createElement("div");
+  skeleton.className = "featured-hero__skeleton";
+  skeleton.innerHTML = '<div class="featured-hero__skeleton-block featured-hero__skeleton-block--label"></div>' +
+    '<div class="featured-hero__skeleton-block featured-hero__skeleton-block--title"></div>' +
+    '<div class="featured-hero__skeleton-block featured-hero__skeleton-block--meta"></div>' +
+    '<div class="featured-hero__skeleton-block featured-hero__skeleton-block--desc"></div>' +
+    '<div class="featured-hero__skeleton-block featured-hero__skeleton-block--btn"></div>';
+  heroEl.appendChild(skeleton);
+
   var slides = [];
   var fetches = FEATURED.map(function (entry) {
     return getGameDetail(entry.slug).then(function (game) {
@@ -493,7 +507,6 @@ async function loadFeaturedHero() {
 
   var overlay = document.createElement("div");
   overlay.className = "featured-hero__overlay";
-  overlay.style.background = "rgba(9,9,11," + HERO_OVERLAY_ALPHA + ")";
   heroEl.appendChild(overlay);
 
   var content = document.createElement("div");
@@ -532,6 +545,7 @@ async function loadFeaturedHero() {
     bgLayer.style.backgroundImage = "url(" + s.game.background_image + ")";
     bgLayer.style.backgroundSize = "cover";
     bgLayer.style.backgroundPosition = "center";
+    bgLayer.classList.add("img-loaded");
 
     content.style.transition = "none";
     content.style.opacity = immediate ? "1" : "0";
@@ -597,14 +611,19 @@ async function loadFeaturedHero() {
     }
 
     if (!immediate) {
-      requestAnimationFrame(function () {
-        bgLayer.style.transition = "opacity 0.4s ease";
-        content.style.transition = "opacity 0.4s ease";
+      if (prefersReducedMotion) {
+        bgLayer.style.opacity = "1";
+        content.style.opacity = "1";
+      } else {
         requestAnimationFrame(function () {
-          bgLayer.style.opacity = "1";
-          content.style.opacity = "1";
+          bgLayer.style.transition = "opacity 0.4s ease";
+          content.style.transition = "opacity 0.4s ease";
+          requestAnimationFrame(function () {
+            bgLayer.style.opacity = "1";
+            content.style.opacity = "1";
+          });
         });
-      });
+      }
     }
   }
 
@@ -621,7 +640,7 @@ async function loadFeaturedHero() {
 
   function startTimer() {
     stopTimer();
-    if (slides.length > 1) {
+    if (slides.length > 1 && !prefersReducedMotion) {
       timer = setInterval(advance, HERO_INTERVAL_MS);
     }
   }
@@ -822,7 +841,16 @@ async function initCatalog() {
         img.src = game.background_image || "";
         img.alt = game.name;
         img.loading = "lazy";
-        img.onerror = function() { this.style.display = "none"; };
+        img.onerror = function() {
+          this.classList.add("img-error");
+          this.style.display = "none";
+        };
+        img.onload = function() {
+          this.classList.add("img-loaded");
+        };
+        if (img.complete && img.naturalWidth > 0) {
+          img.classList.add("img-loaded");
+        }
         link.appendChild(img);
 
         const body = document.createElement("div");
@@ -1556,7 +1584,16 @@ function initPlayedPage() {
       img.src = game.image || "";
       img.alt = game.name;
       img.loading = "lazy";
-      img.onerror = function() { this.style.display = "none"; };
+      img.onerror = function() {
+        this.classList.add("img-error");
+        this.style.display = "none";
+      };
+      img.onload = function() {
+        this.classList.add("img-loaded");
+      };
+      if (img.complete && img.naturalWidth > 0) {
+        img.classList.add("img-loaded");
+      }
       link.appendChild(img);
 
       const body = document.createElement("div");
@@ -1647,7 +1684,16 @@ function initFavoritesPage() {
       img.src = game.image || "";
       img.alt = game.name;
       img.loading = "lazy";
-      img.onerror = function() { this.style.display = "none"; };
+      img.onerror = function() {
+        this.classList.add("img-error");
+        this.style.display = "none";
+      };
+      img.onload = function() {
+        this.classList.add("img-loaded");
+      };
+      if (img.complete && img.naturalWidth > 0) {
+        img.classList.add("img-loaded");
+      }
       link.appendChild(img);
 
       const body = document.createElement("div");
