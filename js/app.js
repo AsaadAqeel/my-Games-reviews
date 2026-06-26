@@ -1,5 +1,5 @@
 import { searchGames, getGameDetail, getGameScreenshots, getGenres, getPlatforms } from "./rawg.js";
-import { getReviews, addReview, getAverageRating, getReviewCount, getAllAverages, getPlayedGames, isPlayed, togglePlayed, removePlayed, getLists, createList, renameList, deleteList, addGameToList, removeGameFromList, isGameInList } from "./storage.js";
+import { getReviews, addReview, getAverageRating, getReviewCount, getAllAverages, getPlayedGames, isPlayed, togglePlayed, removePlayed, getLists, createList, renameList, deleteList, addGameToList, removeGameFromList, isGameInList, getFavorites, isFavorite, toggleFavorite, removeFavorite } from "./storage.js";
 
 // ===================== UTILITIES =====================
 
@@ -128,6 +128,32 @@ function renderStaticStars(rating) {
     el.appendChild(star);
   }
   return el;
+}
+
+// ===================== FAVORITE STAR =====================
+
+function createFavStar(gameId, snapshot, onToggle) {
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "fav-star";
+  const fav = isFavorite(gameId);
+  btn.textContent = fav ? "\u2605" : "\u2606";
+  btn.classList.toggle("fav-star--active", fav);
+  btn.setAttribute("aria-pressed", String(fav));
+  btn.setAttribute("aria-label", fav ? "Remove from favorites" : "Add to favorites");
+
+  btn.addEventListener("click", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const isNowFav = toggleFavorite(gameId, snapshot);
+    btn.textContent = isNowFav ? "\u2605" : "\u2606";
+    btn.classList.toggle("fav-star--active", isNowFav);
+    btn.setAttribute("aria-pressed", String(isNowFav));
+    btn.setAttribute("aria-label", isNowFav ? "Remove from favorites" : "Add to favorites");
+    if (onToggle) onToggle(isNowFav);
+  });
+
+  return btn;
 }
 
 // ===================== ERROR DISPLAY =====================
@@ -345,6 +371,16 @@ async function initCatalog() {
         body.appendChild(scores);
         link.appendChild(body);
         card.appendChild(link);
+
+        const favSnapshot = {
+          id: game.id,
+          name: game.name,
+          image: game.background_image || "",
+          rating: game.rating,
+          released: game.released
+        };
+        card.appendChild(createFavStar(game.id, favSnapshot));
+
         gridEl.appendChild(card);
       }
 
@@ -572,7 +608,7 @@ async function initGameDetail() {
 
   function updatePlayedBtn() {
     const played = isPlayed(gameId);
-    playedBtn.textContent = played ? "Played \u2713" : "Mark as Played";
+    playedBtn.textContent = played ? "Played" : "Play";
     playedBtn.classList.toggle("played-btn--active", played);
     playedBtn.setAttribute("aria-pressed", String(played));
   }
@@ -590,6 +626,16 @@ async function initGameDetail() {
   });
 
   actionsRow.appendChild(playedBtn);
+
+  // Favorite star on detail page
+  const detailFavSnapshot = {
+    id: gameData.id,
+    name: gameData.name,
+    image: gameData.background_image || "",
+    rating: gameData.rating,
+    released: gameData.released
+  };
+  actionsRow.appendChild(createFavStar(gameId, detailFavSnapshot));
 
   // "Add to List" dropdown
   const listDropdown = document.createElement("div");
@@ -1014,6 +1060,15 @@ function initPlayedPage() {
       });
       card.appendChild(removeBtn);
 
+      const favSnapshot = {
+        id: game.id,
+        name: game.name,
+        image: game.image || "",
+        rating: game.rating,
+        released: game.released
+      };
+      card.appendChild(createFavStar(game.id, favSnapshot));
+
       gridEl.appendChild(card);
     }
   }
@@ -1026,11 +1081,83 @@ function initPlayedPage() {
   render();
 }
 
+// ===================== FAVORITES PAGE =====================
+
+function initFavoritesPage() {
+  const gridEl = document.getElementById("favorites-grid");
+
+  function render() {
+    const games = getFavorites();
+    gridEl.innerHTML = "";
+
+    if (games.length === 0) {
+      showEmpty(gridEl, "No favorites yet \u2014 tap the star on any game.");
+      return;
+    }
+
+    for (const game of games) {
+      const card = document.createElement("div");
+      card.className = "game-card";
+
+      const link = document.createElement("a");
+      link.href = "game.html?id=" + game.id;
+      link.setAttribute("aria-label", "View details for " + game.name);
+
+      const img = document.createElement("img");
+      img.className = "game-card__image";
+      img.src = game.image || "";
+      img.alt = game.name;
+      img.loading = "lazy";
+      img.onerror = function() { this.style.display = "none"; };
+      link.appendChild(img);
+
+      const body = document.createElement("div");
+      body.className = "game-card__body";
+
+      const title = document.createElement("div");
+      title.className = "game-card__title";
+      title.textContent = game.name;
+      body.appendChild(title);
+
+      const info = document.createElement("div");
+      info.className = "game-card__genres";
+      if (game.released) {
+        info.textContent = "Released: " + game.released;
+      }
+      body.appendChild(info);
+
+      const scores = document.createElement("div");
+      scores.className = "game-card__scores";
+
+      const rawgScore = document.createElement("span");
+      rawgScore.className = "game-card__rawg-score";
+      rawgScore.textContent = "RAWG: " + (game.rating != null ? game.rating.toFixed(1) : "N/A");
+      scores.appendChild(rawgScore);
+
+      body.appendChild(scores);
+      link.appendChild(body);
+      card.appendChild(link);
+
+      const favSnapshot = {
+        id: game.id,
+        name: game.name,
+        image: game.image || "",
+        rating: game.rating,
+        released: game.released
+      };
+      card.appendChild(createFavStar(game.id, favSnapshot, () => render()));
+
+      gridEl.appendChild(card);
+    }
+  }
+
+  render();
+}
+
 // ===================== LISTS PAGE =====================
 
 function initListsPage() {
   const listsContainer = document.getElementById("lists-container");
-  const statusEl = document.getElementById("lists-status");
 
   let selectedListId = null;
 
@@ -1038,8 +1165,44 @@ function initListsPage() {
     const lists = getLists();
     listsContainer.innerHTML = "";
 
+    // Create New List button
+    const createRow = document.createElement("div");
+    createRow.className = "lists-create";
+
+    const createInput = document.createElement("input");
+    createInput.type = "text";
+    createInput.placeholder = "Enter list name...";
+    createInput.maxLength = 40;
+    createInput.setAttribute("aria-label", "New list name");
+    createInput.className = "lists-create__input";
+
+    const createBtn = document.createElement("button");
+    createBtn.type = "button";
+    createBtn.className = "lists-create__btn";
+    createBtn.textContent = "+ Create New List";
+
+    function doCreate() {
+      const name = createInput.value.trim();
+      if (!name) return;
+      createList(name);
+      createInput.value = "";
+      render();
+    }
+
+    createBtn.addEventListener("click", doCreate);
+    createInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") doCreate();
+    });
+
+    createRow.appendChild(createInput);
+    createRow.appendChild(createBtn);
+    listsContainer.appendChild(createRow);
+
     if (lists.length === 0) {
-      showEmpty(listsContainer, "No lists yet. Create one from a game detail page!");
+      const emptyMsg = document.createElement("div");
+      emptyMsg.className = "status-message";
+      emptyMsg.textContent = "No lists yet. Create one above or from a game detail page!";
+      listsContainer.appendChild(emptyMsg);
       return;
     }
 
@@ -1278,6 +1441,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
   if (path.endsWith("played.html")) {
     initPlayedPage();
+  } else if (path.endsWith("favorites.html")) {
+    initFavoritesPage();
   } else if (path.endsWith("lists.html")) {
     initListsPage();
   } else if (isCatalogPage()) {

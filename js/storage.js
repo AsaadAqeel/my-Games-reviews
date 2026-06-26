@@ -210,3 +210,57 @@ export function getListGameIds() {
   }
   return ids;
 }
+
+// ===================== FAVORITES =====================
+
+const FAVORITES_KEY = "favoriteGames";
+
+function getAllFavorites() {
+  try {
+    const data = localStorage.getItem(FAVORITES_KEY);
+    return data ? JSON.parse(data) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveAllFavorites(list) {
+  try {
+    localStorage.setItem(FAVORITES_KEY, JSON.stringify(list));
+  } catch {
+    // storage full or unavailable
+  }
+}
+
+export function getFavorites() {
+  return getAllFavorites().sort((a, b) => b.addedAt - a.addedAt);
+}
+
+export function isFavorite(gameId) {
+  return getAllFavorites().some(g => g.id === Number(gameId));
+}
+
+export function toggleFavorite(gameId, snapshot) {
+  const list = getAllFavorites();
+  const id = Number(gameId);
+  const idx = list.findIndex(g => g.id === id);
+  if (idx !== -1) {
+    list.splice(idx, 1);
+  } else {
+    list.push({
+      id: snapshot.id,
+      name: snapshot.name,
+      image: snapshot.image,
+      rating: snapshot.rating,
+      released: snapshot.released,
+      addedAt: Date.now()
+    });
+  }
+  saveAllFavorites(list);
+  return idx === -1;
+}
+
+export function removeFavorite(gameId) {
+  const list = getAllFavorites().filter(g => g.id !== Number(gameId));
+  saveAllFavorites(list);
+}

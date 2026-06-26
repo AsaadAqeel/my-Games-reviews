@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Game Details - GameVault</title>
+  <title>Favorites - GameVault</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
@@ -32,14 +32,9 @@
     </div>
   </header>
 
-  <main class="container" id="game-content">
-    <div id="game-detail-loading">
-      <div class="spinner"></div>
-      <p class="status-message">Loading game details...</p>
-    </div>
-    <div id="game-detail-error" style="display:none;"></div>
-    <div id="game-detail" style="display:none;"></div>
-    <div id="reviews-section" style="display:none;"></div>
+  <main class="container">
+    <h1 class="played-header__title">Favorites</h1>
+    <div id="favorites-grid" class="game-grid" aria-live="polite"></div>
   </main>
 
   <footer>

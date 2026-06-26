@@ -920,6 +920,93 @@ footer a:hover { color: var(--accent-hover); }
   color: #fff;
 }
 
+/* ===== Favorite Star (on game cards) ===== */
+.fav-star {
+  position: absolute;
+  top: 0.6rem;
+  right: 0.6rem;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(6px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  font-size: 1.15rem;
+  color: var(--text-muted);
+  cursor: pointer;
+  z-index: 2;
+  transition: color var(--transition), background var(--transition), transform var(--transition);
+  line-height: 1;
+  padding: 0;
+}
+
+.fav-star:hover {
+  color: var(--star-fill);
+  background: rgba(0, 0, 0, 0.8);
+  transform: scale(1.15);
+}
+
+.fav-star--active {
+  color: var(--star-fill);
+}
+
+.fav-star:focus-visible {
+  box-shadow: var(--focus-ring);
+  outline: none;
+}
+
+/* ===== Lists Create Button ===== */
+.lists-create {
+  display: flex;
+  gap: 0.6rem;
+  padding: 1.25rem 0 0.5rem;
+}
+
+.lists-create__input {
+  flex: 1;
+  padding: 0.6rem 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-card);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 0.9rem;
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+
+.lists-create__input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: var(--focus-ring);
+}
+
+.lists-create__input::placeholder { color: #555; }
+
+.lists-create__btn {
+  padding: 0.6rem 1.4rem;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background var(--transition), transform var(--transition), box-shadow var(--transition);
+}
+
+.lists-create__btn:hover {
+  background: var(--accent-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(229, 9, 20, 0.35);
+}
+
+.lists-create__btn:active { transform: translateY(0); }
+
 /* ===== List Dropdown (Game Detail) ===== */
 .list-dropdown {
   position: relative;
