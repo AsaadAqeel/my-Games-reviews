@@ -1299,12 +1299,15 @@ footer a:hover { color: var(--accent-hover); }
 .featured-hero {
   position: relative;
   width: 100%;
-  aspect-ratio: 16 / 5;
-  min-height: 220px;
-  border-radius: 12px;
+  border-radius: 16px;
+  padding: 32px;
   overflow: hidden;
+  border: 0.5px solid var(--border);
+  min-height: 230px;
+  margin-bottom: 28px;
   background: var(--bg-surface);
-  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: flex-end;
 }
 
 .featured-hero__placeholder {
@@ -1328,44 +1331,40 @@ footer a:hover { color: var(--accent-hover); }
 .featured-hero__overlay {
   position: absolute;
   inset: 0;
-  background: rgba(9, 9, 11, 0.55);
   pointer-events: none;
 }
 
 .featured-hero__content {
-  position: absolute;
-  bottom: 0;
+  position: relative;
+  z-index: 1;
   left: 0;
   max-width: 70%;
-  padding: 26px;
-  z-index: 1;
 }
 
 .featured-hero__label {
   display: inline-block;
-  font-size: 0.7rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 1px;
   text-transform: uppercase;
   color: #ef4444;
-  margin-bottom: 0.5rem;
+  margin-bottom: 14px;
 }
 
 .featured-hero__title {
   font-family: "Space Grotesk", "Inter", sans-serif;
-  font-size: 28px;
-  font-weight: 500;
+  font-size: 40px;
+  font-weight: 700;
   color: #fff;
-  line-height: 1.2;
-  margin-bottom: 0.4rem;
+  line-height: 1.1;
+  margin-bottom: 14px;
 }
 
 .featured-hero__meta {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
-  font-size: 0.82rem;
-  margin-bottom: 0.5rem;
+  gap: 8px;
+  margin-bottom: 16px;
 }
 
 .featured-hero__rating {
@@ -1373,45 +1372,42 @@ footer a:hover { color: var(--accent-hover); }
   align-items: center;
   gap: 4px;
   color: #fbbf24;
+  font-size: 18px;
   font-weight: 600;
 }
 
 .featured-hero__year-genre {
-  color: #ccc;
+  color: #c4c4cc;
+  font-size: 16px;
 }
 
 .featured-hero__desc {
-  font-size: 0.82rem;
-  color: #bbb;
+  font-size: 16px;
+  color: #c4c4cc;
   line-height: 1.5;
-  margin-bottom: 0.75rem;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
+  margin-bottom: 22px;
 }
 
 .featured-hero__btn {
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
-  padding: 8px 18px;
+  gap: 8px;
+  padding: 12px 22px;
   background: #ef4444;
   color: #fff;
   border: none;
-  border-radius: 8px;
+  border-radius: 10px;
   font-family: inherit;
-  font-size: 0.85rem;
+  font-size: 15px;
   font-weight: 600;
   text-decoration: none;
   cursor: pointer;
-  transition: background 0.2s ease, transform 0.2s ease;
+  transition: background 0.2s ease;
 }
 
 .featured-hero__btn:hover {
   background: #dc2626;
   color: #fff;
-  transform: translateY(-1px);
 }
 
 .featured-hero__btn:active {
@@ -1419,8 +1415,8 @@ footer a:hover { color: var(--accent-hover); }
 }
 
 .featured-hero__btn svg {
-  width: 14px;
-  height: 14px;
+  width: 16px;
+  height: 16px;
   flex-shrink: 0;
 }
 
@@ -1670,9 +1666,9 @@ footer a:hover { color: var(--accent-hover); }
   .curated-section { margin-top: 2rem; }
   .curated-section__title { font-size: 1.2rem; }
   .game-hero { aspect-ratio: 16/9; }
-  .featured-hero { aspect-ratio: 16/6; min-height: 200px; }
-  .featured-hero__content { max-width: 80%; padding: 20px; }
-  .featured-hero__title { font-size: 22px; }
+  .featured-hero { padding: 22px; min-height: 200px; }
+  .featured-hero__content { max-width: 100%; }
+  .featured-hero__title { font-size: 28px; }
   .game-detail__title { font-size: 1.5rem; }
   .game-detail__scores { gap: 0.75rem; }
   .score-box { min-width: 100px; padding: 0.85rem 1rem; }
@@ -1697,9 +1693,9 @@ footer a:hover { color: var(--accent-hover); }
   .game-detail__title { font-size: 1.25rem; }
   .game-detail__scores { flex-direction: column; }
   .screenshots__grid { grid-template-columns: 1fr; }
-  .featured-hero { aspect-ratio: 16/7; min-height: 180px; }
-  .featured-hero__content { max-width: 100%; padding: 16px; }
-  .featured-hero__title { font-size: 18px; }
+  .featured-hero { padding: 18px; min-height: 180px; }
+  .featured-hero__content { max-width: 100%; }
+  .featured-hero__title { font-size: 24px; }
   .featured-hero__desc { display: none; }
   .game-card__body { padding: 0.85rem; }
   .review-form { padding: 1.15rem; }

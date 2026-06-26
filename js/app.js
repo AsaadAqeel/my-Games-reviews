@@ -322,8 +322,10 @@ function createLightbox(images, startIndex = 0) {
 
 // ===================== HOMEPAGE CURATED SECTIONS =====================
 
-// Set to a RAWG game id to override auto-selection (null = auto)
-const FEATURED_ID = null;
+// ===================== FEATURED HERO CONFIG =====================
+const FEATURED_SLUG = "elden-ring";
+const FEATURED_TAGLINE = "Open-world dark fantasy \u2014 punishing, beautiful, unforgettable.";
+const HERO_OVERLAY_ALPHA = 0.62;
 
 function renderCuratedCard(game) {
   const link = document.createElement("a");
@@ -430,28 +432,7 @@ async function loadFeaturedHero() {
   let game = null;
 
   try {
-    if (FEATURED_ID) {
-      game = await getGameDetail(FEATURED_ID);
-    } else {
-      const data = await searchGames({ ordering: "-rating", pageSize: 40 });
-      const candidates = data.results || [];
-
-      game = candidates.find(
-        (g) => g.ratings_count >= 500 && g.background_image
-      );
-
-      if (!game) {
-        game = candidates.find((g) => g.background_image);
-      }
-
-      if (game && game.id) {
-        try {
-          game = await getGameDetail(game.id);
-        } catch {
-          // Use list-level data if detail fetch fails
-        }
-      }
-    }
+    game = await getGameDetail(FEATURED_SLUG);
   } catch {
     heroEl.classList.add("featured-hero--hidden");
     return;
@@ -464,7 +445,7 @@ async function loadFeaturedHero() {
 
   heroEl.innerHTML = "";
 
-  const img = document.createElement("img");
+  var img = document.createElement("img");
   img.className = "featured-hero__img";
   img.src = game.background_image;
   img.alt = game.name;
@@ -473,39 +454,39 @@ async function loadFeaturedHero() {
   };
   heroEl.appendChild(img);
 
-  const overlay = document.createElement("div");
+  var overlay = document.createElement("div");
   overlay.className = "featured-hero__overlay";
+  overlay.style.background = "rgba(9,9,11," + HERO_OVERLAY_ALPHA + ")";
   heroEl.appendChild(overlay);
 
-  const content = document.createElement("div");
+  var content = document.createElement("div");
   content.className = "featured-hero__content";
 
-  const label = document.createElement("span");
+  var label = document.createElement("span");
   label.className = "featured-hero__label";
-  label.textContent = "Featured";
+  label.textContent = "FEATURED";
   content.appendChild(label);
 
-  const title = document.createElement("h2");
+  var title = document.createElement("h2");
   title.className = "featured-hero__title";
   title.textContent = game.name;
   content.appendChild(title);
 
-  const meta = document.createElement("div");
+  var meta = document.createElement("div");
   meta.className = "featured-hero__meta";
 
   if (game.rating != null) {
-    const rating = document.createElement("span");
+    var rating = document.createElement("span");
     rating.className = "featured-hero__rating";
     rating.textContent = "\u2605 " + game.rating.toFixed(1);
     meta.appendChild(rating);
   }
 
-  const year = game.released ? game.released.substring(0, 4) : null;
-  const genre =
-    game.genres && game.genres.length > 0 ? game.genres[0].name : null;
-  const yearGenre = [year, genre].filter(Boolean).join(" \u00B7 ");
+  var year = game.released ? game.released.substring(0, 4) : null;
+  var genre = game.genres && game.genres.length > 0 ? game.genres[0].name : null;
+  var yearGenre = [year, genre].filter(Boolean).join(" \u00B7 ");
   if (yearGenre) {
-    const yearGenreEl = document.createElement("span");
+    var yearGenreEl = document.createElement("span");
     yearGenreEl.className = "featured-hero__year-genre";
     yearGenreEl.textContent = yearGenre;
     meta.appendChild(yearGenreEl);
@@ -513,22 +494,25 @@ async function loadFeaturedHero() {
 
   content.appendChild(meta);
 
-  if (game.description_raw) {
-    const desc = document.createElement("p");
-    desc.className = "featured-hero__desc";
-    const trimmed =
-      game.description_raw.length > 110
-        ? game.description_raw.substring(0, 110) + "\u2026"
-        : game.description_raw;
-    desc.textContent = trimmed;
-    content.appendChild(desc);
-  }
+  var desc = document.createElement("p");
+  desc.className = "featured-hero__desc";
+  desc.textContent = FEATURED_TAGLINE;
+  content.appendChild(desc);
 
-  const btn = document.createElement("a");
+  var btn = document.createElement("a");
   btn.className = "featured-hero__btn";
   btn.href = "game.html?id=" + game.id;
-  btn.innerHTML =
-    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>';
+  var btnSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  btnSvg.setAttribute("viewBox", "0 0 24 24");
+  btnSvg.setAttribute("fill", "none");
+  btnSvg.setAttribute("stroke", "currentColor");
+  btnSvg.setAttribute("stroke-width", "2");
+  btnSvg.setAttribute("stroke-linecap", "round");
+  btnSvg.setAttribute("stroke-linejoin", "round");
+  var btnPoly = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
+  btnPoly.setAttribute("points", "5 3 19 12 5 21 5 3");
+  btnSvg.appendChild(btnPoly);
+  btn.appendChild(btnSvg);
   btn.appendChild(document.createTextNode(" View game"));
   content.appendChild(btn);
 
