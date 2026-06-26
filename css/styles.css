@@ -143,6 +143,67 @@ header .container {
 }
 .search-bar button:active { transform: translateY(0); }
 
+/* ===== Navigation ===== */
+.nav-toggle {
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+  width: 40px;
+  height: 40px;
+  padding: 8px;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.nav-toggle:hover { border-color: #3a3a3a; }
+
+.nav-toggle__bar {
+  display: block;
+  width: 100%;
+  height: 2px;
+  background: var(--text);
+  border-radius: 1px;
+  transition: transform var(--transition), opacity var(--transition);
+  transform-origin: center;
+}
+
+.nav-toggle[aria-expanded="true"] .nav-toggle__bar:nth-child(1) {
+  transform: translateY(7px) rotate(45deg);
+}
+.nav-toggle[aria-expanded="true"] .nav-toggle__bar:nth-child(2) {
+  opacity: 0;
+}
+.nav-toggle[aria-expanded="true"] .nav-toggle__bar:nth-child(3) {
+  transform: translateY(-7px) rotate(-45deg);
+}
+
+.main-nav {
+  display: flex;
+  gap: 0.25rem;
+  align-items: center;
+}
+
+.main-nav__link {
+  padding: 0.4rem 0.75rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  text-decoration: none;
+  transition: color var(--transition), background var(--transition);
+}
+.main-nav__link:hover {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.05);
+}
+.main-nav__link[aria-current="page"] {
+  color: var(--accent);
+  font-weight: 600;
+}
+
 /* ===== Filters ===== */
 .filters {
   display: flex;
@@ -787,6 +848,39 @@ footer a:hover { color: var(--accent-hover); }
 /* ===== Responsive ===== */
 @media (max-width: 768px) {
   .container { padding: 0 1rem; }
+
+  /* Hamburger visible, nav hidden by default */
+  .nav-toggle { display: flex; }
+  .main-nav {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: var(--bg-surface);
+    border-bottom: 1px solid var(--border);
+    border-top: 1px solid var(--border);
+    padding: 0.5rem 1rem;
+    z-index: 101;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+  }
+  .main-nav.is-open {
+    display: flex;
+  }
+  .main-nav__link {
+    padding: 0.85rem 0.75rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.95rem;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+  }
+  .main-nav__link:hover {
+    background: rgba(255, 255, 255, 0.05);
+  }
+
   .game-grid {
     grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
     gap: 1rem;

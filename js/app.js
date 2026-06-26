@@ -803,6 +803,71 @@ function renderReviewsSection(container, gameId) {
   }
 }
 
+// ===================== HEADER NAV =====================
+
+function initHeaderNav() {
+  const toggle = document.getElementById("nav-toggle");
+  const nav = document.getElementById("main-nav");
+  if (!toggle || !nav) return;
+
+  function openMenu() {
+    nav.classList.add("is-open");
+    toggle.setAttribute("aria-expanded", "true");
+  }
+
+  function closeMenu(returnFocus) {
+    nav.classList.remove("is-open");
+    toggle.setAttribute("aria-expanded", "false");
+    if (returnFocus) toggle.focus();
+  }
+
+  function isOpen() {
+    return nav.classList.contains("is-open");
+  }
+
+  toggle.addEventListener("click", () => {
+    if (isOpen()) {
+      closeMenu(true);
+    } else {
+      openMenu();
+    }
+  });
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && isOpen()) {
+      closeMenu(true);
+    }
+  });
+
+  nav.addEventListener("click", (e) => {
+    if (e.target.classList.contains("main-nav__link")) {
+      closeMenu(false);
+    }
+  });
+
+  document.addEventListener("click", (e) => {
+    if (isOpen() && !nav.contains(e.target) && !toggle.contains(e.target)) {
+      closeMenu(false);
+    }
+  });
+
+  // Set active link
+  const path = window.location.pathname;
+  const links = nav.querySelectorAll(".main-nav__link");
+  links.forEach((link) => {
+    const href = link.getAttribute("href");
+    let isActive = false;
+    if (href === "index.html" || href === "/") {
+      isActive = path.endsWith("index.html") || path.endsWith("/") || path === "";
+    } else {
+      isActive = path.endsWith(href);
+    }
+    if (isActive) {
+      link.setAttribute("aria-current", "page");
+    }
+  });
+}
+
 // ===================== SEARCH (shared header) =====================
 
 function initHeaderSearch() {
@@ -833,6 +898,7 @@ function initHeaderSearch() {
 // ===================== INIT =====================
 
 document.addEventListener("DOMContentLoaded", () => {
+  initHeaderNav();
   initHeaderSearch();
 
   if (isCatalogPage()) {
