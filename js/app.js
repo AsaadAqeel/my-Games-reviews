@@ -707,7 +707,8 @@ async function initGameDetail() {
     createBtn.textContent = "+";
     createBtn.setAttribute("aria-label", "Create list");
 
-    function doCreate() {
+    function doCreate(e) {
+      if (e) e.stopPropagation();
       const name = createInput.value.trim();
       if (!name) return;
       createList(name);
@@ -717,7 +718,10 @@ async function initGameDetail() {
 
     createBtn.addEventListener("click", doCreate);
     createInput.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") doCreate();
+      if (e.key === "Enter") {
+        e.preventDefault();
+        doCreate(e);
+      }
     });
 
     createRow.appendChild(createInput);
@@ -725,15 +729,32 @@ async function initGameDetail() {
     listMenu.appendChild(createRow);
   }
 
+  function closeListMenu() {
+    listMenu.style.display = "none";
+    document.removeEventListener("click", handleOutsideClick);
+    document.removeEventListener("keydown", handleEscapeKey);
+  }
+
+  function handleOutsideClick(e) {
+    if (listMenu.contains(e.target) || listToggle.contains(e.target)) return;
+    closeListMenu();
+  }
+
+  function handleEscapeKey(e) {
+    if (e.key === "Escape") closeListMenu();
+  }
+
   listToggle.addEventListener("click", (e) => {
     e.stopPropagation();
     const isOpen = listMenu.style.display !== "none";
-    listMenu.style.display = isOpen ? "none" : "block";
-    if (!isOpen) renderListMenu();
-  });
-
-  document.addEventListener("click", () => {
-    listMenu.style.display = "none";
+    if (isOpen) {
+      closeListMenu();
+    } else {
+      listMenu.style.display = "block";
+      renderListMenu();
+      document.addEventListener("click", handleOutsideClick);
+      document.addEventListener("keydown", handleEscapeKey);
+    }
   });
 
   actionsRow.appendChild(listDropdown);
