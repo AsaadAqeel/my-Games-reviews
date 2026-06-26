@@ -34,7 +34,8 @@
   </header>
 
   <main class="container">
-    <div class="filters" role="toolbar" aria-label="Filter and sort games">
+    <!-- Hidden legacy elements (kept for JS initCatalog compatibility) -->
+    <div class="filters" role="toolbar" aria-label="Filter and sort games" hidden>
       <select id="genre-filter" aria-label="Filter by genre">
         <option value="">All Genres</option>
       </select>
@@ -50,10 +51,150 @@
         <option value="-added">Most Popular</option>
       </select>
     </div>
+    <div id="game-grid" class="game-grid" aria-live="polite" hidden></div>
+    <div id="status-message" hidden></div>
+    <div id="pagination" class="pagination" hidden></div>
 
-    <div id="game-grid" class="game-grid" aria-live="polite"></div>
-    <div id="status-message"></div>
-    <div id="pagination" class="pagination"></div>
+    <!-- Top Rated Section -->
+    <section class="curated-section">
+      <h2 class="curated-section__title">Top rated</h2>
+      <div class="curated-grid" data-grid="top-rated">
+        <a href="#" class="curated-card">
+          <div class="curated-card__cover">
+            <img src="https://placehold.co/400x250/1a1a1a/666?text=Game" alt="Placeholder game cover">
+            <span class="curated-card__rating">★ 4.8</span>
+            <div class="curated-card__caption">
+              <span class="curated-card__title">Elden Ring</span>
+              <span class="curated-card__meta">2022 · Action RPG</span>
+            </div>
+          </div>
+        </a>
+        <a href="#" class="curated-card">
+          <div class="curated-card__cover">
+            <img src="https://placehold.co/400x250/1a1a1a/666?text=Game" alt="Placeholder game cover">
+            <span class="curated-card__rating">★ 4.7</span>
+            <div class="curated-card__caption">
+              <span class="curated-card__title">Baldur's Gate 3</span>
+              <span class="curated-card__meta">2023 · RPG</span>
+            </div>
+          </div>
+        </a>
+        <a href="#" class="curated-card">
+          <div class="curated-card__cover">
+            <img src="https://placehold.co/400x250/1a1a1a/666?text=Game" alt="Placeholder game cover">
+            <span class="curated-card__rating">★ 4.6</span>
+            <div class="curated-card__caption">
+              <span class="curated-card__title">Red Dead Redemption 2</span>
+              <span class="curated-card__meta">2018 · Action</span>
+            </div>
+          </div>
+        </a>
+        <a href="#" class="curated-card">
+          <div class="curated-card__cover">
+            <img src="https://placehold.co/400x250/1a1a1a/666?text=Game" alt="Placeholder game cover">
+            <span class="curated-card__rating">★ 4.5</span>
+            <div class="curated-card__caption">
+              <span class="curated-card__title">The Witcher 3</span>
+              <span class="curated-card__meta">2015 · RPG</span>
+            </div>
+          </div>
+        </a>
+        <a href="#" class="curated-card">
+          <div class="curated-card__cover">
+            <img src="https://placehold.co/400x250/1a1a1a/666?text=Game" alt="Placeholder game cover">
+            <span class="curated-card__rating">★ 4.4</span>
+            <div class="curated-card__caption">
+              <span class="curated-card__title">Hades</span>
+              <span class="curated-card__meta">2020 · Roguelike</span>
+            </div>
+          </div>
+        </a>
+        <a href="#" class="curated-card">
+          <div class="curated-card__cover">
+            <img src="https://placehold.co/400x250/1a1a1a/666?text=Game" alt="Placeholder game cover">
+            <span class="curated-card__rating">★ 4.3</span>
+            <div class="curated-card__caption">
+              <span class="curated-card__title">Celeste</span>
+              <span class="curated-card__meta">2018 · Platformer</span>
+            </div>
+          </div>
+        </a>
+      </div>
+    </section>
+
+    <!-- Popular Section -->
+    <section class="curated-section">
+      <h2 class="curated-section__title">Popular</h2>
+      <div class="curated-grid" data-grid="popular">
+        <a href="#" class="curated-card">
+          <div class="curated-card__cover">
+            <img src="https://placehold.co/400x250/1a1a1a/666?text=Game" alt="Placeholder game cover">
+            <span class="curated-card__rating">★ 4.2</span>
+            <div class="curated-card__caption">
+              <span class="curated-card__title">GTA V</span>
+              <span class="curated-card__meta">2013 · Action</span>
+            </div>
+          </div>
+        </a>
+        <a href="#" class="curated-card">
+          <div class="curated-card__cover">
+            <img src="https://placehold.co/400x250/1a1a1a/666?text=Game" alt="Placeholder game cover">
+            <span class="curated-card__rating">★ 4.1</span>
+            <div class="curated-card__caption">
+              <span class="curated-card__title">Fortnite</span>
+              <span class="curated-card__meta">2017 · Shooter</span>
+            </div>
+          </div>
+        </a>
+        <a href="#" class="curated-card">
+          <div class="curated-card__cover">
+            <img src="https://placehold.co/400x250/1a1a1a/666?text=Game" alt="Placeholder game cover">
+            <span class="curated-card__rating">★ 4.0</span>
+            <div class="curated-card__caption">
+              <span class="curated-card__title">Minecraft</span>
+              <span class="curated-card__meta">2011 · Sandbox</span>
+            </div>
+          </div>
+        </a>
+        <a href="#" class="curated-card">
+          <div class="curated-card__cover">
+            <img src="https://placehold.co/400x250/1a1a1a/666?text=Game" alt="Placeholder game cover">
+            <span class="curated-card__rating">★ 3.9</span>
+            <div class="curated-card__caption">
+              <span class="curated-card__title">Call of Duty: MW3</span>
+              <span class="curated-card__meta">2023 · Shooter</span>
+            </div>
+          </div>
+        </a>
+        <a href="#" class="curated-card">
+          <div class="curated-card__cover">
+            <img src="https://placehold.co/400x250/1a1a1a/666?text=Game" alt="Placeholder game cover">
+            <span class="curated-card__rating">★ 3.8</span>
+            <div class="curated-card__caption">
+              <span class="curated-card__title">League of Legends</span>
+              <span class="curated-card__meta">2009 · MOBA</span>
+            </div>
+          </div>
+        </a>
+        <a href="#" class="curated-card">
+          <div class="curated-card__cover">
+            <img src="https://placehold.co/400x250/1a1a1a/666?text=Game" alt="Placeholder game cover">
+            <span class="curated-card__rating">★ 3.7</span>
+            <div class="curated-card__caption">
+              <span class="curated-card__title">Valorant</span>
+              <span class="curated-card__meta">2020 · Tactical Shooter</span>
+            </div>
+          </div>
+        </a>
+      </div>
+    </section>
+
+    <div class="curated-cta">
+      <a href="#" id="all-games-btn" class="all-games-btn">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2 2h5v5H2V2zm7 0h5v5H9V2zM2 9h5v5H2V9zm7 0h5v5H9V9z" fill="currentColor"/></svg>
+        All games
+      </a>
+    </div>
   </main>
 
   <footer>

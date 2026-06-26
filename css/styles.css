@@ -1295,6 +1295,140 @@ footer a:hover { color: var(--accent-hover); }
   color: var(--accent-hover);
 }
 
+/* ===== Curated Homepage Sections ===== */
+.curated-section {
+  margin-top: 2.5rem;
+}
+
+.curated-section__title {
+  font-family: "Space Grotesk", "Inter", sans-serif;
+  font-size: 1.4rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin-bottom: 1rem;
+  color: var(--text);
+}
+
+.curated-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 14px;
+}
+
+.curated-card {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  transition: transform 0.22s ease, border-color 0.22s ease;
+}
+
+.curated-card:hover {
+  transform: translateY(-3px);
+  border-color: #ef4444;
+}
+
+.curated-card__cover {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  background: var(--bg-surface);
+}
+
+.curated-card__cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.curated-card__rating {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 3px 8px;
+  border-radius: 20px;
+  background: rgba(12, 12, 14, 0.8);
+  color: #fbbf24;
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1.3;
+  backdrop-filter: blur(4px);
+}
+
+.curated-card__caption {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 6px 10px;
+  background: rgba(10, 10, 12, 0.74);
+  backdrop-filter: blur(4px);
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.curated-card__title {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.35;
+}
+
+.curated-card__meta {
+  display: block;
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  line-height: 1.3;
+}
+
+/* ===== All Games CTA ===== */
+.curated-cta {
+  display: flex;
+  justify-content: center;
+  margin-top: 2rem;
+  padding-bottom: 1rem;
+}
+
+.all-games-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 10px 22px;
+  background: #ef4444;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.all-games-btn:hover {
+  background: #dc2626;
+  color: #fff;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(239, 68, 68, 0.35);
+}
+
+.all-games-btn:active {
+  transform: translateY(0);
+}
+
 /* ===== Reduced Motion ===== */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
@@ -1304,6 +1438,7 @@ footer a:hover { color: var(--accent-hover); }
   }
   .game-card:hover { transform: none; }
   .game-card:hover .game-card__image { transform: none; }
+  .curated-card:hover { transform: none; }
   .lightbox { animation: none; }
 }
 
@@ -1347,6 +1482,12 @@ footer a:hover { color: var(--accent-hover); }
     grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
     gap: 1rem;
   }
+  .curated-grid {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 10px;
+  }
+  .curated-section { margin-top: 2rem; }
+  .curated-section__title { font-size: 1.2rem; }
   .game-hero { aspect-ratio: 16/9; }
   .game-detail__title { font-size: 1.5rem; }
   .game-detail__scores { gap: 0.75rem; }
@@ -1360,6 +1501,10 @@ footer a:hover { color: var(--accent-hover); }
   .container { padding: 0 0.85rem; }
   .game-grid {
     grid-template-columns: 1fr;
+  }
+  .curated-grid {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 8px;
   }
   header .container {
     flex-direction: column;
