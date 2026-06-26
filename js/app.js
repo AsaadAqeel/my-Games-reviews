@@ -333,8 +333,14 @@ const SHELF_TARGET = 30;
 const SHELF_MAX_PAGES = 4;
 
 // ===================== FEATURED HERO CONFIG =====================
-const FEATURED_SLUG = "elden-ring";
-const FEATURED_TAGLINE = "Open-world dark fantasy \u2014 punishing, beautiful, unforgettable.";
+const FEATURED = [
+  { slug: "the-last-of-us-remastered", tagline: "A brutal, tender journey through a broken world." },
+  { slug: "elden-ring",                tagline: "Open-world dark fantasy \u2014 punishing, beautiful, unforgettable." },
+  { slug: "the-witcher-3-wild-hunt",   tagline: "A sprawling RPG masterpiece of choice and consequence." },
+  { slug: "grand-theft-auto-v",        tagline: "Three criminals, one city, endless chaos." },
+  { slug: "call-of-duty",              tagline: "Fast, loud, relentless first-person warfare." },
+];
+const HERO_INTERVAL_MS = 10000;
 const HERO_OVERLAY_ALPHA = 0.62;
 
 function renderCuratedCard(game) {
@@ -445,30 +451,45 @@ async function loadFeaturedHero() {
   const heroEl = document.getElementById("featured-hero");
   if (!heroEl) return;
 
-  let game = null;
+  var slides = [];
+  var fetches = FEATURED.map(function (entry) {
+    return getGameDetail(entry.slug).then(function (game) {
+      if (game && game.background_image) {
+        slides.push({ game: game, tagline: entry.tagline, slug: entry.slug });
+      }
+    }).catch(function () {
+      // skip failed slug
+    });
+  });
 
-  try {
-    game = await getGameDetail(FEATURED_SLUG);
-  } catch {
+  await Promise.all(fetches);
+
+  if (slides.length === 0) {
     heroEl.classList.add("featured-hero--hidden");
     return;
   }
 
-  if (!game || !game.background_image) {
-    heroEl.classList.add("featured-hero--hidden");
-    return;
-  }
+  slides.sort(function (a, b) {
+    var ai = FEATURED.findIndex(function (e) { return e.slug === a.slug; });
+    var bi = FEATURED.findIndex(function (e) { return e.slug === b.slug; });
+    return ai - bi;
+  });
+
+  var preloadPromises = slides.map(function (s) {
+    return new Promise(function (resolve) {
+      var img = new Image();
+      img.onload = function () { resolve(); };
+      img.onerror = function () { resolve(); };
+      img.src = s.game.background_image;
+    });
+  });
+  await Promise.all(preloadPromises);
 
   heroEl.innerHTML = "";
 
-  var img = document.createElement("img");
-  img.className = "featured-hero__img";
-  img.src = game.background_image;
-  img.alt = game.name;
-  img.onerror = function () {
-    heroEl.classList.add("featured-hero--hidden");
-  };
-  heroEl.appendChild(img);
+  var bgLayer = document.createElement("div");
+  bgLayer.className = "featured-hero__img";
+  heroEl.appendChild(bgLayer);
 
   var overlay = document.createElement("div");
   overlay.className = "featured-hero__overlay";
@@ -477,62 +498,156 @@ async function loadFeaturedHero() {
 
   var content = document.createElement("div");
   content.className = "featured-hero__content";
-
-  var label = document.createElement("span");
-  label.className = "featured-hero__label";
-  label.textContent = "FEATURED";
-  content.appendChild(label);
-
-  var title = document.createElement("h2");
-  title.className = "featured-hero__title";
-  title.textContent = game.name;
-  content.appendChild(title);
-
-  var meta = document.createElement("div");
-  meta.className = "featured-hero__meta";
-
-  if (game.rating != null) {
-    var rating = document.createElement("span");
-    rating.className = "featured-hero__rating";
-    rating.textContent = "\u2605 " + game.rating.toFixed(1);
-    meta.appendChild(rating);
-  }
-
-  var year = game.released ? game.released.substring(0, 4) : null;
-  var genre = game.genres && game.genres.length > 0 ? game.genres[0].name : null;
-  var yearGenre = [year, genre].filter(Boolean).join(" \u00B7 ");
-  if (yearGenre) {
-    var yearGenreEl = document.createElement("span");
-    yearGenreEl.className = "featured-hero__year-genre";
-    yearGenreEl.textContent = yearGenre;
-    meta.appendChild(yearGenreEl);
-  }
-
-  content.appendChild(meta);
-
-  var desc = document.createElement("p");
-  desc.className = "featured-hero__desc";
-  desc.textContent = FEATURED_TAGLINE;
-  content.appendChild(desc);
-
-  var btn = document.createElement("a");
-  btn.className = "featured-hero__btn";
-  btn.href = "game.html?id=" + game.id;
-  var btnSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-  btnSvg.setAttribute("viewBox", "0 0 24 24");
-  btnSvg.setAttribute("fill", "none");
-  btnSvg.setAttribute("stroke", "currentColor");
-  btnSvg.setAttribute("stroke-width", "2");
-  btnSvg.setAttribute("stroke-linecap", "round");
-  btnSvg.setAttribute("stroke-linejoin", "round");
-  var btnPoly = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
-  btnPoly.setAttribute("points", "5 3 19 12 5 21 5 3");
-  btnSvg.appendChild(btnPoly);
-  btn.appendChild(btnSvg);
-  btn.appendChild(document.createTextNode(" View game"));
-  content.appendChild(btn);
-
   heroEl.appendChild(content);
+
+  var dotsWrap = document.createElement("div");
+  dotsWrap.className = "featured-hero__dots";
+  heroEl.appendChild(dotsWrap);
+
+  var dots = [];
+  for (var d = 0; d < slides.length; d++) {
+    var dot = document.createElement("button");
+    dot.className = "featured-hero__dot";
+    dot.type = "button";
+    dot.setAttribute("aria-label", "Show slide " + (d + 1));
+    (function (idx) {
+      dot.addEventListener("click", function () {
+        goToSlide(idx);
+        resetTimer();
+      });
+    })(d);
+    dotsWrap.appendChild(dot);
+    dots.push(dot);
+  }
+
+  var currentIdx = 0;
+  var timer = null;
+  var paused = false;
+
+  function renderSlide(idx, immediate) {
+    var s = slides[idx];
+
+    bgLayer.style.transition = "none";
+    bgLayer.style.opacity = immediate ? "1" : "0";
+    bgLayer.style.backgroundImage = "url(" + s.game.background_image + ")";
+    bgLayer.style.backgroundSize = "cover";
+    bgLayer.style.backgroundPosition = "center";
+
+    content.style.transition = "none";
+    content.style.opacity = immediate ? "1" : "0";
+
+    content.innerHTML = "";
+
+    var label = document.createElement("span");
+    label.className = "featured-hero__label";
+    label.textContent = "FEATURED";
+    content.appendChild(label);
+
+    var title = document.createElement("h2");
+    title.className = "featured-hero__title";
+    title.textContent = s.game.name;
+    content.appendChild(title);
+
+    var meta = document.createElement("div");
+    meta.className = "featured-hero__meta";
+
+    if (s.game.rating != null) {
+      var rating = document.createElement("span");
+      rating.className = "featured-hero__rating";
+      rating.textContent = "\u2605 " + s.game.rating.toFixed(1);
+      meta.appendChild(rating);
+    }
+
+    var year = s.game.released ? s.game.released.substring(0, 4) : null;
+    var genre = s.game.genres && s.game.genres.length > 0 ? s.game.genres[0].name : null;
+    var yearGenre = [year, genre].filter(Boolean).join(" \u00B7 ");
+    if (yearGenre) {
+      var yearGenreEl = document.createElement("span");
+      yearGenreEl.className = "featured-hero__year-genre";
+      yearGenreEl.textContent = yearGenre;
+      meta.appendChild(yearGenreEl);
+    }
+
+    content.appendChild(meta);
+
+    var desc = document.createElement("p");
+    desc.className = "featured-hero__desc";
+    desc.textContent = s.tagline;
+    content.appendChild(desc);
+
+    var btn = document.createElement("a");
+    btn.className = "featured-hero__btn";
+    btn.href = "game.html?id=" + s.game.id;
+    var btnSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    btnSvg.setAttribute("viewBox", "0 0 24 24");
+    btnSvg.setAttribute("fill", "none");
+    btnSvg.setAttribute("stroke", "currentColor");
+    btnSvg.setAttribute("stroke-width", "2");
+    btnSvg.setAttribute("stroke-linecap", "round");
+    btnSvg.setAttribute("stroke-linejoin", "round");
+    var btnPoly = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
+    btnPoly.setAttribute("points", "5 3 19 12 5 21 5 3");
+    btnSvg.appendChild(btnPoly);
+    btn.appendChild(btnSvg);
+    btn.appendChild(document.createTextNode(" View game"));
+    content.appendChild(btn);
+
+    for (var i = 0; i < dots.length; i++) {
+      dots[i].classList.toggle("featured-hero__dot--active", i === idx);
+    }
+
+    if (!immediate) {
+      requestAnimationFrame(function () {
+        bgLayer.style.transition = "opacity 0.4s ease";
+        content.style.transition = "opacity 0.4s ease";
+        requestAnimationFrame(function () {
+          bgLayer.style.opacity = "1";
+          content.style.opacity = "1";
+        });
+      });
+    }
+  }
+
+  function goToSlide(idx) {
+    currentIdx = idx;
+    renderSlide(currentIdx, false);
+  }
+
+  function advance() {
+    if (paused) return;
+    var next = (currentIdx + 1) % slides.length;
+    goToSlide(next);
+  }
+
+  function startTimer() {
+    stopTimer();
+    if (slides.length > 1) {
+      timer = setInterval(advance, HERO_INTERVAL_MS);
+    }
+  }
+
+  function stopTimer() {
+    if (timer) {
+      clearInterval(timer);
+      timer = null;
+    }
+  }
+
+  function resetTimer() {
+    stopTimer();
+    startTimer();
+  }
+
+  heroEl.addEventListener("mouseenter", function () {
+    paused = true;
+  });
+
+  heroEl.addEventListener("mouseleave", function () {
+    paused = false;
+  });
+
+  renderSlide(0, true);
+  startTimer();
 }
 
 async function initHomepageSections() {
