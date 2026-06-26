@@ -340,7 +340,7 @@ const FEATURED = [
   { slug: "grand-theft-auto-v",        tagline: "Three criminals, one city, endless chaos." },
   { slug: "call-of-duty",              tagline: "Fast, loud, relentless first-person warfare." },
 ];
-const HERO_INTERVAL_MS = 10000;
+const HERO_INTERVAL_MS = 6000;
 
 function renderCuratedCard(game) {
   const link = document.createElement("a");
