@@ -1665,7 +1665,6 @@ footer a:hover { color: var(--accent-hover); }
     gap: 1rem;
   }
   .curated-grid {
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
     gap: 10px;
   }
   .curated-section { margin-top: 2rem; }
@@ -1688,7 +1687,6 @@ footer a:hover { color: var(--accent-hover); }
     grid-template-columns: 1fr;
   }
   .curated-grid {
-    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
     gap: 8px;
   }
   header .container {

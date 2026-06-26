@@ -366,7 +366,7 @@ function renderCuratedCard(game) {
   return link;
 }
 
-async function loadSection({ gridSelector, ordering, pageSize = 6 }) {
+async function loadSection({ gridSelector, ordering, pageSize = 6, minRatingCount = 0 }) {
   const grid = document.querySelector(gridSelector);
   if (!grid) return;
 
@@ -381,24 +381,42 @@ async function loadSection({ gridSelector, ordering, pageSize = 6 }) {
   grid.appendChild(loadingMsg);
 
   try {
-    const data = await searchGames({ ordering, pageSize });
+    const fetchSize = minRatingCount > 0 ? Math.max(pageSize * 3, 40) : pageSize;
+    const data = await searchGames({ ordering, pageSize: fetchSize });
     grid.innerHTML = "";
 
-    const games = data.results || [];
+    let games = data.results || [];
+
+    if (minRatingCount > 0) {
+      games = games.filter(function (g) {
+        return g.background_image && (g.ratings_count || 0) >= minRatingCount;
+      });
+    }
+
+    var seen = new Set();
+    games = games.filter(function (g) {
+      var key = normalizeText(g.name);
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+
+    games = games.slice(0, pageSize);
+
     if (games.length === 0) {
-      const empty = document.createElement("div");
+      var empty = document.createElement("div");
       empty.className = "status-message";
       empty.textContent = "No games available right now.";
       grid.appendChild(empty);
       return;
     }
 
-    for (const game of games) {
-      grid.appendChild(renderCuratedCard(game));
+    for (var i = 0; i < games.length; i++) {
+      grid.appendChild(renderCuratedCard(games[i]));
     }
   } catch (err) {
     grid.innerHTML = "";
-    const error = document.createElement("div");
+    var error = document.createElement("div");
     error.className = "status-message error";
     error.textContent = err.message || "Failed to load games. Please try again later.";
     grid.appendChild(error);
@@ -519,8 +537,8 @@ async function loadFeaturedHero() {
 
 function initHomepageSections() {
   loadFeaturedHero();
-  loadSection({ gridSelector: '[data-grid="top-rated"]', ordering: "-rating", pageSize: 18 });
-  loadSection({ gridSelector: '[data-grid="popular"]', ordering: "-added", pageSize: 18 });
+  loadSection({ gridSelector: '[data-grid="top-rated"]', ordering: "-rating", pageSize: 18, minRatingCount: 200 });
+  loadSection({ gridSelector: '[data-grid="popular"]', ordering: "-added", pageSize: 18, minRatingCount: 200 });
 
   const allGamesBtn = document.getElementById("all-games-btn");
   if (allGamesBtn) {
