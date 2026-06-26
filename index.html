@@ -35,27 +35,6 @@
   </header>
 
   <main class="container">
-    <!-- Hidden legacy elements (kept for JS initCatalog compatibility) -->
-    <div class="filters" role="toolbar" aria-label="Filter and sort games" hidden>
-      <select id="genre-filter" aria-label="Filter by genre">
-        <option value="">All Genres</option>
-      </select>
-      <select id="platform-filter" aria-label="Filter by platform">
-        <option value="">All Platforms</option>
-      </select>
-      <select id="sort-select" aria-label="Sort games">
-        <option value="-rating">Top Rated</option>
-        <option value="-released">Newest</option>
-        <option value="released">Oldest</option>
-        <option value="name">Name A-Z</option>
-        <option value="-name">Name Z-A</option>
-        <option value="-added">Most Popular</option>
-      </select>
-    </div>
-    <div id="game-grid" class="game-grid" aria-live="polite" hidden></div>
-    <div id="status-message" hidden></div>
-    <div id="pagination" class="pagination" hidden></div>
-
     <!-- Top Rated Section -->
     <section class="curated-section">
       <h2 class="curated-section__title">Top rated</h2>
