@@ -562,7 +562,7 @@ async function initGameDetail() {
   detailEl.style.display = "block";
   reviewsEl.style.display = "block";
 
-  document.title = gameData.name + " - GameVault";
+  document.title = gameData.name + " - Checkpoint";
 
   // Hero image
   const hero = document.createElement("div");
