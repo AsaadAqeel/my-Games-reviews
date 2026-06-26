@@ -15,8 +15,8 @@ async function apiFetch(path, params = {}) {
   const url = buildUrl(path, params);
   try {
     const res = await fetch(url);
-    if (res.status === 401) {
-      throw { type: "auth", message: "Invalid API key. Please check your RAWG API key in config.js." };
+    if (res.status === 401 || res.status === 403) {
+      throw { type: "auth", message: "Invalid API key \u2014 please check your RAWG API key in config.js." };
     }
     if (res.status === 429) {
       throw { type: "rate", message: "Rate limit exceeded. Please wait a moment and try again." };

@@ -3,12 +3,6 @@ import { getReviews, addReview, getAverageRating, getReviewCount, getAllAverages
 
 // ===================== UTILITIES =====================
 
-function escapeHtml(str) {
-  const div = document.createElement("div");
-  div.textContent = str;
-  return div.innerHTML;
-}
-
 function formatDate(ts) {
   return new Date(ts).toLocaleDateString("en-US", {
     year: "numeric", month: "short", day: "numeric"
@@ -306,12 +300,12 @@ async function initCatalog() {
 
         const link = document.createElement("a");
         link.href = "game.html?id=" + game.id;
-        link.setAttribute("aria-label", "View details for " + escapeHtml(game.name));
+        link.setAttribute("aria-label", "View details for " + game.name);
 
         const img = document.createElement("img");
         img.className = "game-card__image";
         img.src = game.background_image || "";
-        img.alt = escapeHtml(game.name);
+        img.alt = game.name;
         img.loading = "lazy";
         img.onerror = function() { this.style.display = "none"; };
         link.appendChild(img);
@@ -456,7 +450,7 @@ async function initGameDetail() {
   detailEl.style.display = "block";
   reviewsEl.style.display = "block";
 
-  document.title = escapeHtml(gameData.name) + " - GameVault";
+  document.title = gameData.name + " - GameVault";
 
   // Hero image
   const hero = document.createElement("div");
@@ -464,7 +458,7 @@ async function initGameDetail() {
   if (gameData.background_image) {
     const heroImg = document.createElement("img");
     heroImg.src = gameData.background_image;
-    heroImg.alt = escapeHtml(gameData.name);
+    heroImg.alt = gameData.name;
     hero.appendChild(heroImg);
   }
   detailEl.appendChild(hero);
@@ -488,22 +482,22 @@ async function initGameDetail() {
 
   if (gameData.released) {
     const rel = document.createElement("span");
-    rel.textContent = "Released: " + escapeHtml(gameData.released);
+    rel.textContent = "Released: " + gameData.released;
     meta.appendChild(rel);
   }
   if (gameData.developers && gameData.developers.length > 0) {
     const dev = document.createElement("span");
-    dev.textContent = "Developer: " + gameData.developers.map(d => escapeHtml(d.name)).join(", ");
+    dev.textContent = "Developer: " + gameData.developers.map(d => d.name).join(", ");
     meta.appendChild(dev);
   }
   if (gameData.genres && gameData.genres.length > 0) {
     const gen = document.createElement("span");
-    gen.textContent = "Genres: " + gameData.genres.map(g => escapeHtml(g.name)).join(", ");
+    gen.textContent = "Genres: " + gameData.genres.map(g => g.name).join(", ");
     meta.appendChild(gen);
   }
   if (gameData.platforms && gameData.platforms.length > 0) {
     const plat = document.createElement("span");
-    plat.textContent = "Platforms: " + gameData.platforms.map(p => escapeHtml(p.platform.name)).join(", ");
+    plat.textContent = "Platforms: " + gameData.platforms.map(p => p.platform.name).join(", ");
     meta.appendChild(plat);
   }
   detailEl.appendChild(meta);
@@ -781,7 +775,7 @@ function renderReviewsSection(container, gameId) {
 
       const author = document.createElement("span");
       author.className = "review-card__author";
-      author.textContent = escapeHtml(review.name);
+      author.textContent = review.name;
       header.appendChild(author);
 
       const date = document.createElement("span");
@@ -796,7 +790,7 @@ function renderReviewsSection(container, gameId) {
 
       const reviewTitle = document.createElement("div");
       reviewTitle.className = "review-card__title";
-      reviewTitle.textContent = escapeHtml(review.title);
+      reviewTitle.textContent = review.title;
       card.appendChild(reviewTitle);
 
       const body = document.createElement("div");
@@ -817,6 +811,14 @@ function initHeaderSearch() {
 
   if (!searchInput) return;
 
+  if (isCatalogPage()) {
+    const searchParam = getParam("search");
+    if (searchParam) {
+      searchInput.value = searchParam;
+    }
+    return;
+  }
+
   function doSearch() {
     const q = searchInput.value.trim();
     window.location.href = "index.html" + (q ? "?search=" + encodeURIComponent(q) : "");
@@ -826,12 +828,6 @@ function initHeaderSearch() {
   searchInput.addEventListener("keydown", (e) => {
     if (e.key === "Enter") doSearch();
   });
-
-  // Pre-fill from URL param
-  const searchParam = getParam("search");
-  if (searchParam && isCatalogPage()) {
-    searchInput.value = searchParam;
-  }
 }
 
 // ===================== INIT =====================
