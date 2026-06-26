@@ -22,6 +22,10 @@ function getParam(name) {
 }
 
 function isCatalogPage() {
+  return window.location.pathname.endsWith("games.html");
+}
+
+function isHomePage() {
   return window.location.pathname.endsWith("index.html") ||
          window.location.pathname.endsWith("/") ||
          window.location.pathname === "";
@@ -314,6 +318,98 @@ function createLightbox(images, startIndex = 0) {
   document.addEventListener("keydown", handleKey);
   document.body.appendChild(overlay);
   closeBtn.focus();
+}
+
+// ===================== HOMEPAGE CURATED SECTIONS =====================
+
+function renderCuratedCard(game) {
+  const link = document.createElement("a");
+  link.href = "game.html?id=" + game.id;
+  link.className = "curated-card";
+  link.setAttribute("aria-label", "View details for " + game.name);
+
+  const cover = document.createElement("div");
+  cover.className = "curated-card__cover";
+
+  const img = document.createElement("img");
+  img.src = game.background_image || "";
+  img.alt = game.name;
+  img.loading = "lazy";
+  img.onerror = function () { this.style.display = "none"; };
+  cover.appendChild(img);
+
+  const rating = document.createElement("span");
+  rating.className = "curated-card__rating";
+  rating.textContent = "\u2605 " + (game.rating != null ? game.rating.toFixed(1) : "N/A");
+  cover.appendChild(rating);
+
+  const caption = document.createElement("div");
+  caption.className = "curated-card__caption";
+
+  const title = document.createElement("span");
+  title.className = "curated-card__title";
+  title.textContent = game.name;
+  caption.appendChild(title);
+
+  const meta = document.createElement("span");
+  meta.className = "curated-card__meta";
+  const year = game.released ? game.released.substring(0, 4) : null;
+  const genre = game.genres && game.genres.length > 0 ? game.genres[0].name : null;
+  meta.textContent = [year, genre].filter(Boolean).join(" \u00B7 ") || "";
+  caption.appendChild(meta);
+
+  cover.appendChild(caption);
+  link.appendChild(cover);
+  return link;
+}
+
+async function loadSection({ gridSelector, ordering, pageSize = 6 }) {
+  const grid = document.querySelector(gridSelector);
+  if (!grid) return;
+
+  grid.innerHTML = "";
+  const spinner = document.createElement("div");
+  spinner.className = "spinner";
+  grid.appendChild(spinner);
+
+  const loadingMsg = document.createElement("p");
+  loadingMsg.className = "status-message";
+  loadingMsg.textContent = "Loading\u2026";
+  grid.appendChild(loadingMsg);
+
+  try {
+    const data = await searchGames({ ordering, pageSize });
+    grid.innerHTML = "";
+
+    const games = data.results || [];
+    if (games.length === 0) {
+      const empty = document.createElement("div");
+      empty.className = "status-message";
+      empty.textContent = "No games available right now.";
+      grid.appendChild(empty);
+      return;
+    }
+
+    for (const game of games) {
+      grid.appendChild(renderCuratedCard(game));
+    }
+  } catch (err) {
+    grid.innerHTML = "";
+    const error = document.createElement("div");
+    error.className = "status-message error";
+    error.textContent = err.message || "Failed to load games. Please try again later.";
+    grid.appendChild(error);
+  }
+}
+
+function initHomepageSections() {
+  loadSection({ gridSelector: '[data-grid="top-rated"]', ordering: "-rating", pageSize: 6 });
+  loadSection({ gridSelector: '[data-grid="popular"]', ordering: "-added", pageSize: 6 });
+
+  const allGamesBtn = document.getElementById("all-games-btn");
+  if (allGamesBtn) {
+    allGamesBtn.href = "games.html";
+  }
 }
 
 // ===================== CATALOG PAGE =====================
@@ -1637,7 +1733,7 @@ function initHeaderSearch() {
 
   function doSearch() {
     const q = searchInput.value.trim();
-    window.location.href = "index.html" + (q ? "?search=" + encodeURIComponent(q) : "");
+    window.location.href = "games.html" + (q ? "?search=" + encodeURIComponent(q) : "");
   }
 
   searchBtn.addEventListener("click", doSearch);
@@ -1662,6 +1758,8 @@ document.addEventListener("DOMContentLoaded", () => {
     initListsPage();
   } else if (path.endsWith("my-reviews.html")) {
     initMyReviewsPage();
+  } else if (isHomePage()) {
+    initHomepageSections();
   } else if (isCatalogPage()) {
     initCatalog();
   } else if (path.endsWith("game.html")) {
