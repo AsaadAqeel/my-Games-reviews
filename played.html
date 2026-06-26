@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Played Games - GameVault</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <header>
+    <div class="container">
+      <a href="index.html" class="site-logo">Game<span>Vault</span></a>
+      <div class="search-bar" role="search">
+        <label for="search-input" class="sr-only" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);">Search games</label>
+        <input type="search" id="search-input" placeholder="Search games..." autocomplete="off">
+        <button type="button" id="search-btn" aria-label="Search">Search</button>
+      </div>
+      <button type="button" id="nav-toggle" class="nav-toggle" aria-label="Menu" aria-expanded="false" aria-controls="main-nav">
+        <span class="nav-toggle__bar"></span>
+        <span class="nav-toggle__bar"></span>
+        <span class="nav-toggle__bar"></span>
+      </button>
+      <nav id="main-nav" class="main-nav" aria-label="Main navigation">
+        <a href="index.html" class="main-nav__link">Home</a>
+        <a href="played.html" class="main-nav__link">Played</a>
+        <a href="lists.html" class="main-nav__link">Lists</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <div class="played-header">
+      <h1 class="played-header__title">Played Games</h1>
+      <div class="played-header__sort">
+        <label for="played-sort" class="sr-only" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);">Sort played games</label>
+        <select id="played-sort" aria-label="Sort played games">
+          <option value="recent">Recently Added</option>
+          <option value="name">Name A-Z</option>
+        </select>
+      </div>
+    </div>
+
+    <div id="played-grid" class="game-grid" aria-live="polite"></div>
+    <div id="played-status"></div>
+  </main>
+
+  <footer>
+    <div class="container">
+      <p>Game data powered by <a href="https://rawg.io" target="_blank" rel="noopener noreferrer">RAWG</a> &mdash; <a href="https://rawg.io" target="_blank" rel="noopener noreferrer">https://rawg.io</a></p>
+    </div>
+  </footer>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

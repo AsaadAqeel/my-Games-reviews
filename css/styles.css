@@ -242,6 +242,7 @@ header .container {
 
 /* ===== Game Card ===== */
 .game-card {
+  position: relative;
   background: var(--bg-card);
   border-radius: var(--radius);
   overflow: hidden;
@@ -818,6 +819,105 @@ footer a:hover { color: var(--accent-hover); }
   font-size: 0.88rem;
   color: var(--text);
   line-height: 1.6;
+}
+
+/* ===== Game Detail Actions ===== */
+.game-detail__actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+}
+
+.played-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.6rem 1.25rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-card);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 0.88rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background var(--transition), border-color var(--transition), color var(--transition), box-shadow var(--transition);
+}
+.played-btn:hover {
+  background: var(--bg-surface);
+  border-color: #3a3a3a;
+}
+.played-btn:focus-visible {
+  box-shadow: var(--focus-ring);
+}
+.played-btn--active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+.played-btn--active:hover {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+}
+
+/* ===== Played Page ===== */
+.played-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding: 1.25rem 0 0.25rem;
+}
+
+.played-header__title {
+  font-family: "Space Grotesk", "Inter", sans-serif;
+  font-size: 1.6rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.played-header__sort select {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-card);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: border-color var(--transition), box-shadow var(--transition);
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%239a9a9a' d='M2 4l4 4 4-4'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.6rem center;
+  padding-right: 1.8rem;
+}
+.played-header__sort select:hover { border-color: #3a3a3a; }
+.played-header__sort select:focus-visible { border-color: var(--accent); box-shadow: var(--focus-ring); }
+
+/* ===== Remove Button (on played cards) ===== */
+.remove-btn {
+  position: absolute;
+  bottom: 0.6rem;
+  right: 0.6rem;
+  padding: 0.35rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-surface);
+  color: var(--text-muted);
+  font-family: inherit;
+  font-size: 0.72rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background var(--transition), color var(--transition), border-color var(--transition);
+  z-index: 1;
+}
+.remove-btn:hover {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
 }
 
 /* ===== Back Link ===== */

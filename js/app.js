@@ -1,5 +1,5 @@
 import { searchGames, getGameDetail, getGameScreenshots, getGenres, getPlatforms } from "./rawg.js";
-import { getReviews, addReview, getAverageRating, getReviewCount, getAllAverages } from "./storage.js";
+import { getReviews, addReview, getAverageRating, getReviewCount, getAllAverages, getPlayedGames, isPlayed, togglePlayed, removePlayed } from "./storage.js";
 
 // ===================== UTILITIES =====================
 
@@ -561,6 +561,37 @@ async function initGameDetail() {
 
   detailEl.appendChild(scoresContainer);
 
+  // Actions row
+  const actionsRow = document.createElement("div");
+  actionsRow.className = "game-detail__actions";
+
+  const playedBtn = document.createElement("button");
+  playedBtn.type = "button";
+  playedBtn.className = "played-btn";
+  playedBtn.setAttribute("aria-pressed", String(isPlayed(gameId)));
+
+  function updatePlayedBtn() {
+    const played = isPlayed(gameId);
+    playedBtn.textContent = played ? "Played \u2713" : "Mark as Played";
+    playedBtn.classList.toggle("played-btn--active", played);
+    playedBtn.setAttribute("aria-pressed", String(played));
+  }
+  updatePlayedBtn();
+
+  playedBtn.addEventListener("click", () => {
+    togglePlayed(gameId, {
+      id: gameData.id,
+      name: gameData.name,
+      image: gameData.background_image || "",
+      rating: gameData.rating,
+      released: gameData.released
+    });
+    updatePlayedBtn();
+  });
+
+  actionsRow.appendChild(playedBtn);
+  detailEl.appendChild(actionsRow);
+
   // Description
   if (gameData.description_raw) {
     const descSection = document.createElement("div");
@@ -803,6 +834,97 @@ function renderReviewsSection(container, gameId) {
   }
 }
 
+// ===================== PLAYED PAGE =====================
+
+function initPlayedPage() {
+  const gridEl = document.getElementById("played-grid");
+  const statusEl = document.getElementById("played-status");
+  const sortSelect = document.getElementById("played-sort");
+
+  let currentSort = "recent";
+
+  function render() {
+    let games = getPlayedGames();
+
+    if (currentSort === "name") {
+      games = [...games].sort((a, b) => a.name.localeCompare(b.name));
+    }
+
+    gridEl.innerHTML = "";
+
+    if (games.length === 0) {
+      showEmpty(gridEl, "You haven\u2019t marked any games as played yet.");
+      return;
+    }
+
+    for (const game of games) {
+      const card = document.createElement("div");
+      card.className = "game-card";
+
+      const link = document.createElement("a");
+      link.href = "game.html?id=" + game.id;
+      link.setAttribute("aria-label", "View details for " + game.name);
+
+      const img = document.createElement("img");
+      img.className = "game-card__image";
+      img.src = game.image || "";
+      img.alt = game.name;
+      img.loading = "lazy";
+      img.onerror = function() { this.style.display = "none"; };
+      link.appendChild(img);
+
+      const body = document.createElement("div");
+      body.className = "game-card__body";
+
+      const title = document.createElement("div");
+      title.className = "game-card__title";
+      title.textContent = game.name;
+      body.appendChild(title);
+
+      const info = document.createElement("div");
+      info.className = "game-card__genres";
+      if (game.released) {
+        info.textContent = "Released: " + game.released;
+      }
+      body.appendChild(info);
+
+      const scores = document.createElement("div");
+      scores.className = "game-card__scores";
+
+      const rawgScore = document.createElement("span");
+      rawgScore.className = "game-card__rawg-score";
+      rawgScore.textContent = "RAWG: " + (game.rating != null ? game.rating.toFixed(1) : "N/A");
+      scores.appendChild(rawgScore);
+
+      body.appendChild(scores);
+      link.appendChild(body);
+      card.appendChild(link);
+
+      const removeBtn = document.createElement("button");
+      removeBtn.type = "button";
+      removeBtn.className = "remove-btn";
+      removeBtn.textContent = "Remove";
+      removeBtn.setAttribute("aria-label", "Remove " + game.name + " from played");
+      removeBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        removePlayed(game.id);
+        render();
+      });
+      card.appendChild(removeBtn);
+
+      gridEl.appendChild(card);
+    }
+  }
+
+  sortSelect.addEventListener("change", () => {
+    currentSort = sortSelect.value;
+    render();
+  });
+
+  render();
+}
+
 // ===================== HEADER NAV =====================
 
 function initHeaderNav() {
@@ -901,9 +1023,13 @@ document.addEventListener("DOMContentLoaded", () => {
   initHeaderNav();
   initHeaderSearch();
 
-  if (isCatalogPage()) {
+  const path = window.location.pathname;
+
+  if (path.endsWith("played.html")) {
+    initPlayedPage();
+  } else if (isCatalogPage()) {
     initCatalog();
-  } else if (window.location.pathname.endsWith("game.html")) {
+  } else if (path.endsWith("game.html")) {
     initGameDetail();
   }
 });
