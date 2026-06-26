@@ -116,3 +116,97 @@ export function removePlayed(gameId) {
   const list = getAllPlayed().filter(g => g.id !== Number(gameId));
   saveAllPlayed(list);
 }
+
+// ===================== LISTS =====================
+
+const LISTS_KEY = "gameLists";
+
+function getAllLists() {
+  try {
+    const data = localStorage.getItem(LISTS_KEY);
+    return data ? JSON.parse(data) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveAllLists(lists) {
+  try {
+    localStorage.setItem(LISTS_KEY, JSON.stringify(lists));
+  } catch {
+    // storage full or unavailable
+  }
+}
+
+export function getLists() {
+  return getAllLists();
+}
+
+export function createList(name) {
+  const lists = getAllLists();
+  const newList = {
+    id: Date.now(),
+    name: name,
+    createdAt: Date.now(),
+    games: []
+  };
+  lists.push(newList);
+  saveAllLists(lists);
+  return newList;
+}
+
+export function renameList(listId, newName) {
+  const lists = getAllLists();
+  const list = lists.find(l => l.id === listId);
+  if (list) {
+    list.name = newName;
+    saveAllLists(lists);
+  }
+}
+
+export function deleteList(listId) {
+  const lists = getAllLists().filter(l => l.id !== listId);
+  saveAllLists(lists);
+}
+
+export function addGameToList(listId, snapshot) {
+  const lists = getAllLists();
+  const list = lists.find(l => l.id === listId);
+  if (!list) return false;
+  if (list.games.some(g => g.id === snapshot.id)) return false;
+  list.games.push({
+    id: snapshot.id,
+    name: snapshot.name,
+    image: snapshot.image,
+    rating: snapshot.rating,
+    released: snapshot.released,
+    addedAt: Date.now()
+  });
+  saveAllLists(lists);
+  return true;
+}
+
+export function removeGameFromList(listId, gameId) {
+  const lists = getAllLists();
+  const list = lists.find(l => l.id === listId);
+  if (!list) return;
+  list.games = list.games.filter(g => g.id !== Number(gameId));
+  saveAllLists(lists);
+}
+
+export function isGameInList(listId, gameId) {
+  const lists = getAllLists();
+  const list = lists.find(l => l.id === listId);
+  return list ? list.games.some(g => g.id === Number(gameId)) : false;
+}
+
+export function getListGameIds() {
+  const lists = getAllLists();
+  const ids = new Set();
+  for (const list of lists) {
+    for (const game of list.games) {
+      ids.add(game.id);
+    }
+  }
+  return ids;
+}

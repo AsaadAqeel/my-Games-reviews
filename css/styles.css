@@ -920,6 +920,214 @@ footer a:hover { color: var(--accent-hover); }
   color: #fff;
 }
 
+/* ===== List Dropdown (Game Detail) ===== */
+.list-dropdown {
+  position: relative;
+}
+
+.list-toggle {
+  white-space: nowrap;
+}
+
+.list-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  min-width: 240px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  z-index: 50;
+  padding: 0.4rem 0;
+  margin-top: 0.35rem;
+}
+
+.list-menu__item {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.55rem 0.85rem;
+  font-size: 0.85rem;
+  color: var(--text);
+  cursor: pointer;
+  transition: background var(--transition);
+}
+
+.list-menu__item:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.list-menu__item input[type="checkbox"] {
+  accent-color: var(--accent);
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.list-menu__create {
+  display: flex;
+  gap: 0.4rem;
+  padding: 0.5rem 0.6rem;
+  border-top: 1px solid var(--border);
+  margin-top: 0.25rem;
+}
+
+.list-menu__create input {
+  flex: 1;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-inset);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 0.82rem;
+}
+
+.list-menu__create input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: var(--focus-ring);
+}
+
+.list-menu__create input::placeholder { color: #555; }
+
+.list-menu__create-btn {
+  padding: 0.4rem 0.75rem;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background var(--transition);
+}
+
+.list-menu__create-btn:hover { background: var(--accent-hover); }
+
+/* ===== List Card (Lists Page) ===== */
+.list-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin-bottom: 0.85rem;
+  transition: border-color var(--transition);
+}
+
+.list-card:hover { border-color: #3a3a3a; }
+
+.list-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
+}
+
+.list-card__title {
+  font-family: "Space Grotesk", "Inter", sans-serif;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text);
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  padding: 0;
+  transition: color var(--transition);
+}
+
+.list-card__title:hover { color: var(--accent-soft); }
+
+.list-card__controls {
+  display: flex;
+  gap: 0.4rem;
+  flex-shrink: 0;
+}
+
+.list-card__btn {
+  padding: 0.35rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-surface);
+  color: var(--text-muted);
+  font-family: inherit;
+  font-size: 0.72rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background var(--transition), color var(--transition), border-color var(--transition);
+}
+
+.list-card__btn:hover {
+  background: var(--bg-inset);
+  color: var(--text);
+  border-color: #3a3a3a;
+}
+
+.list-card__btn--danger:hover {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.list-card__games {
+  border-top: 1px solid var(--border);
+  padding: 0.5rem 0;
+}
+
+.list-card__game {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem 1.25rem;
+  position: relative;
+  transition: background var(--transition);
+}
+
+.list-card__game:hover { background: rgba(255, 255, 255, 0.02); }
+
+.list-card__game-link {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  text-decoration: none;
+  color: inherit;
+  flex: 1;
+  min-width: 0;
+}
+
+.list-card__game-link:hover { color: inherit; }
+
+.list-card__game-thumb {
+  width: 48px;
+  height: 28px;
+  object-fit: cover;
+  border-radius: 4px;
+  flex-shrink: 0;
+  background: var(--bg-surface);
+}
+
+.list-card__game-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.list-card__game-name {
+  font-size: 0.88rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.list-card__game-date {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
 /* ===== Back Link ===== */
 .back-link {
   display: inline-flex;

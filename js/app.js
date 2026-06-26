@@ -1,5 +1,5 @@
 import { searchGames, getGameDetail, getGameScreenshots, getGenres, getPlatforms } from "./rawg.js";
-import { getReviews, addReview, getAverageRating, getReviewCount, getAllAverages, getPlayedGames, isPlayed, togglePlayed, removePlayed } from "./storage.js";
+import { getReviews, addReview, getAverageRating, getReviewCount, getAllAverages, getPlayedGames, isPlayed, togglePlayed, removePlayed, getLists, createList, renameList, deleteList, addGameToList, removeGameFromList, isGameInList } from "./storage.js";
 
 // ===================== UTILITIES =====================
 
@@ -590,6 +590,107 @@ async function initGameDetail() {
   });
 
   actionsRow.appendChild(playedBtn);
+
+  // "Add to List" dropdown
+  const listDropdown = document.createElement("div");
+  listDropdown.className = "list-dropdown";
+
+  const listToggle = document.createElement("button");
+  listToggle.type = "button";
+  listToggle.className = "played-btn list-toggle";
+  listToggle.textContent = "Add to List \u25BE";
+  listDropdown.appendChild(listToggle);
+
+  const listMenu = document.createElement("div");
+  listMenu.className = "list-menu";
+  listMenu.setAttribute("role", "menu");
+  listMenu.style.display = "none";
+  listDropdown.appendChild(listMenu);
+
+  function renderListMenu() {
+    listMenu.innerHTML = "";
+    const lists = getLists();
+
+    lists.forEach(list => {
+      const item = document.createElement("label");
+      item.className = "list-menu__item";
+      item.setAttribute("role", "menuitemcheckbox");
+
+      const checkbox = document.createElement("input");
+      checkbox.type = "checkbox";
+      checkbox.checked = isGameInList(list.id, gameId);
+      checkbox.setAttribute("aria-label", list.name);
+
+      const nameSpan = document.createElement("span");
+      nameSpan.textContent = list.name;
+
+      item.appendChild(checkbox);
+      item.appendChild(nameSpan);
+
+      checkbox.addEventListener("change", () => {
+        const snapshot = {
+          id: gameData.id,
+          name: gameData.name,
+          image: gameData.background_image || "",
+          rating: gameData.rating,
+          released: gameData.released
+        };
+        if (checkbox.checked) {
+          addGameToList(list.id, snapshot);
+        } else {
+          removeGameFromList(list.id, gameId);
+        }
+      });
+
+      listMenu.appendChild(item);
+    });
+
+    // Create new list input
+    const createRow = document.createElement("div");
+    createRow.className = "list-menu__create";
+
+    const createInput = document.createElement("input");
+    createInput.type = "text";
+    createInput.placeholder = "New list name...";
+    createInput.maxLength = 40;
+    createInput.setAttribute("aria-label", "New list name");
+
+    const createBtn = document.createElement("button");
+    createBtn.type = "button";
+    createBtn.className = "list-menu__create-btn";
+    createBtn.textContent = "+";
+    createBtn.setAttribute("aria-label", "Create list");
+
+    function doCreate() {
+      const name = createInput.value.trim();
+      if (!name) return;
+      createList(name);
+      createInput.value = "";
+      renderListMenu();
+    }
+
+    createBtn.addEventListener("click", doCreate);
+    createInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") doCreate();
+    });
+
+    createRow.appendChild(createInput);
+    createRow.appendChild(createBtn);
+    listMenu.appendChild(createRow);
+  }
+
+  listToggle.addEventListener("click", (e) => {
+    e.stopPropagation();
+    const isOpen = listMenu.style.display !== "none";
+    listMenu.style.display = isOpen ? "none" : "block";
+    if (!isOpen) renderListMenu();
+  });
+
+  document.addEventListener("click", () => {
+    listMenu.style.display = "none";
+  });
+
+  actionsRow.appendChild(listDropdown);
   detailEl.appendChild(actionsRow);
 
   // Description
@@ -925,6 +1026,156 @@ function initPlayedPage() {
   render();
 }
 
+// ===================== LISTS PAGE =====================
+
+function initListsPage() {
+  const listsContainer = document.getElementById("lists-container");
+  const statusEl = document.getElementById("lists-status");
+
+  let selectedListId = null;
+
+  function render() {
+    const lists = getLists();
+    listsContainer.innerHTML = "";
+
+    if (lists.length === 0) {
+      showEmpty(listsContainer, "No lists yet. Create one from a game detail page!");
+      return;
+    }
+
+    for (const list of lists) {
+      const card = document.createElement("div");
+      card.className = "list-card";
+
+      const header = document.createElement("div");
+      header.className = "list-card__header";
+
+      const titleBtn = document.createElement("button");
+      titleBtn.type = "button";
+      titleBtn.className = "list-card__title";
+      titleBtn.textContent = list.name + " (" + list.games.length + ")";
+      titleBtn.setAttribute("aria-expanded", selectedListId === list.id ? "true" : "false");
+
+      const controls = document.createElement("div");
+      controls.className = "list-card__controls";
+
+      const renameBtn = document.createElement("button");
+      renameBtn.type = "button";
+      renameBtn.className = "list-card__btn";
+      renameBtn.textContent = "Rename";
+      renameBtn.setAttribute("aria-label", "Rename " + list.name);
+
+      renameBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const newName = prompt("Rename list:", list.name);
+        if (newName && newName.trim()) {
+          renameList(list.id, newName.trim());
+          render();
+        }
+      });
+
+      const deleteBtn = document.createElement("button");
+      deleteBtn.type = "button";
+      deleteBtn.className = "list-card__btn list-card__btn--danger";
+      deleteBtn.textContent = "Delete";
+      deleteBtn.setAttribute("aria-label", "Delete " + list.name);
+
+      deleteBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        if (confirm("Delete \"" + list.name + "\"? This cannot be undone.")) {
+          deleteList(list.id);
+          if (selectedListId === list.id) selectedListId = null;
+          render();
+        }
+      });
+
+      controls.appendChild(renameBtn);
+      controls.appendChild(deleteBtn);
+
+      header.appendChild(titleBtn);
+      header.appendChild(controls);
+      card.appendChild(header);
+
+      titleBtn.addEventListener("click", () => {
+        selectedListId = selectedListId === list.id ? null : list.id;
+        render();
+      });
+
+      // Expanded game list
+      if (selectedListId === list.id) {
+        const gamesContainer = document.createElement("div");
+        gamesContainer.className = "list-card__games";
+
+        if (list.games.length === 0) {
+          const emptyMsg = document.createElement("div");
+          emptyMsg.className = "status-message";
+          emptyMsg.textContent = "This list is empty. Add games from their detail page!";
+          gamesContainer.appendChild(emptyMsg);
+        } else {
+          for (const game of list.games) {
+            const gameRow = document.createElement("div");
+            gameRow.className = "list-card__game";
+
+            const gameLink = document.createElement("a");
+            gameLink.href = "game.html?id=" + game.id;
+            gameLink.className = "list-card__game-link";
+            gameLink.setAttribute("aria-label", "View " + game.name);
+
+            if (game.image) {
+              const thumb = document.createElement("img");
+              thumb.className = "list-card__game-thumb";
+              thumb.src = game.image;
+              thumb.alt = game.name;
+              thumb.loading = "lazy";
+              thumb.onerror = function() { this.style.display = "none"; };
+              gameLink.appendChild(thumb);
+            }
+
+            const gameInfo = document.createElement("div");
+            gameInfo.className = "list-card__game-info";
+
+            const gameName = document.createElement("span");
+            gameName.className = "list-card__game-name";
+            gameName.textContent = game.name;
+            gameInfo.appendChild(gameName);
+
+            if (game.released) {
+              const gameDate = document.createElement("span");
+              gameDate.className = "list-card__game-date";
+              gameDate.textContent = game.released;
+              gameInfo.appendChild(gameDate);
+            }
+
+            gameLink.appendChild(gameInfo);
+            gameRow.appendChild(gameLink);
+
+            const removeBtn = document.createElement("button");
+            removeBtn.type = "button";
+            removeBtn.className = "remove-btn";
+            removeBtn.textContent = "Remove";
+            removeBtn.setAttribute("aria-label", "Remove " + game.name + " from " + list.name);
+            removeBtn.addEventListener("click", (e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              removeGameFromList(list.id, game.id);
+              render();
+            });
+            gameRow.appendChild(removeBtn);
+
+            gamesContainer.appendChild(gameRow);
+          }
+        }
+
+        card.appendChild(gamesContainer);
+      }
+
+      listsContainer.appendChild(card);
+    }
+  }
+
+  render();
+}
+
 // ===================== HEADER NAV =====================
 
 function initHeaderNav() {
@@ -1027,6 +1278,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
   if (path.endsWith("played.html")) {
     initPlayedPage();
+  } else if (path.endsWith("lists.html")) {
+    initListsPage();
   } else if (isCatalogPage()) {
     initCatalog();
   } else if (path.endsWith("game.html")) {
