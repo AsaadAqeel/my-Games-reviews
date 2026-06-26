@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Game Details - GameVault</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <header>
+    <div class="container">
+      <a href="index.html" class="site-logo">Game<span>Vault</span></a>
+      <div class="search-bar" role="search">
+        <label for="search-input" class="sr-only" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);">Search games</label>
+        <input type="search" id="search-input" placeholder="Search games..." autocomplete="off">
+        <button type="button" id="search-btn" aria-label="Search">Search</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container" id="game-content">
+    <div id="game-detail-loading">
+      <div class="spinner"></div>
+      <p class="status-message">Loading game details...</p>
+    </div>
+    <div id="game-detail-error" style="display:none;"></div>
+    <div id="game-detail" style="display:none;"></div>
+    <div id="reviews-section" style="display:none;"></div>
+  </main>
+
+  <footer>
+    <div class="container">
+      <p>Game data powered by <a href="https://rawg.io" target="_blank" rel="noopener noreferrer">RAWG</a> &mdash; <a href="https://rawg.io" target="_blank" rel="noopener noreferrer">https://rawg.io</a></p>
+    </div>
+  </footer>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
