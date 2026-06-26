@@ -923,39 +923,53 @@ footer a:hover { color: var(--accent-hover); }
 /* ===== Favorite Star (on game cards) ===== */
 .fav-star {
   position: absolute;
-  top: 0.6rem;
-  right: 0.6rem;
-  width: 36px;
-  height: 36px;
+  top: 0.5rem;
+  right: 0.5rem;
+  width: 44px;
+  height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(0, 0, 0, 0.6);
+  background: rgba(0, 0, 0, 0.55);
   backdrop-filter: blur(6px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 50%;
-  font-size: 1.15rem;
-  color: var(--text-muted);
   cursor: pointer;
   z-index: 2;
-  transition: color var(--transition), background var(--transition), transform var(--transition);
-  line-height: 1;
   padding: 0;
+  line-height: 1;
+  transition: transform var(--transition), background var(--transition), box-shadow var(--transition);
+}
+
+.fav-star svg {
+  width: 24px;
+  height: 24px;
+  fill: transparent;
+  stroke: var(--star-fill);
+  stroke-width: 2;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.6));
+  transition: fill 0.15s ease, filter 0.15s ease;
 }
 
 .fav-star:hover {
-  color: var(--star-fill);
-  background: rgba(0, 0, 0, 0.8);
-  transform: scale(1.15);
+  background: rgba(0, 0, 0, 0.75);
+  transform: scale(1.1);
 }
 
-.fav-star--active {
-  color: var(--star-fill);
+.fav-star:hover svg,
+.fav-star:focus-visible svg {
+  fill: var(--star-fill);
 }
 
 .fav-star:focus-visible {
   box-shadow: var(--focus-ring);
   outline: none;
+}
+
+.fav-star[aria-pressed="true"] svg {
+  fill: var(--star-fill);
+  stroke: var(--star-fill);
+  filter: drop-shadow(0 0 6px rgba(255, 183, 3, 0.5));
 }
 
 /* ===== Lists Create Button ===== */
