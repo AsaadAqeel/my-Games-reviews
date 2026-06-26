@@ -646,6 +646,38 @@ async function loadFeaturedHero() {
     paused = false;
   });
 
+  var touchStartX = 0;
+  var touchStartY = 0;
+  var swiping = false;
+
+  heroEl.addEventListener("touchstart", function (e) {
+    touchStartX = e.touches[0].clientX;
+    touchStartY = e.touches[0].clientY;
+    swiping = false;
+  }, { passive: true });
+
+  heroEl.addEventListener("touchmove", function (e) {
+    var dx = e.touches[0].clientX - touchStartX;
+    var dy = e.touches[0].clientY - touchStartY;
+    if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 10) {
+      swiping = true;
+    }
+  }, { passive: true });
+
+  heroEl.addEventListener("touchend", function (e) {
+    if (!swiping) return;
+    var dx = e.changedTouches[0].clientX - touchStartX;
+    if (Math.abs(dx) < 40) return;
+    if (dx < 0) {
+      var next = (currentIdx + 1) % slides.length;
+      goToSlide(next);
+    } else {
+      var prev = (currentIdx - 1 + slides.length) % slides.length;
+      goToSlide(prev);
+    }
+    resetTimer();
+  }, { passive: true });
+
   renderSlide(0, true);
   startTimer();
 }
