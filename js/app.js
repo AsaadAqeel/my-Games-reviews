@@ -27,6 +27,73 @@ function isCatalogPage() {
          window.location.pathname === "";
 }
 
+// ===================== SEARCH RELEVANCE =====================
+
+const SEARCH_MIN_SCORE = 0.6;
+
+function normalizeText(str) {
+  return str.toLowerCase().trim().replace(/[^a-z0-9\s]/g, "").replace(/\s+/g, " ");
+}
+
+function levenshteinDistance(a, b) {
+  const m = a.length;
+  const n = b.length;
+  if (m === 0) return n;
+  if (n === 0) return m;
+
+  const dp = [];
+  for (let i = 0; i <= m; i++) {
+    dp[i] = [i];
+  }
+  for (let j = 0; j <= n; j++) {
+    dp[0][j] = j;
+  }
+
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      dp[i][j] = Math.min(
+        dp[i - 1][j] + 1,
+        dp[i][j - 1] + 1,
+        dp[i - 1][j - 1] + cost
+      );
+    }
+  }
+
+  return dp[m][n];
+}
+
+function stringSimilarity(query, name) {
+  const maxLen = Math.max(query.length, name.length);
+  if (maxLen === 0) return 1;
+
+  const fullScore = 1 - levenshteinDistance(query, name) / maxLen;
+
+  const truncated = name.substring(0, query.length);
+  const truncScore = 1 - levenshteinDistance(query, truncated) / maxLen;
+
+  return Math.max(fullScore, truncScore);
+}
+
+function isRelevantGame(gameName, query) {
+  const normalized = normalizeText(gameName);
+  const q = normalizeText(query);
+
+  if (normalized.includes(q)) return true;
+
+  const queryWords = q.split(" ").filter(Boolean);
+  if (queryWords.length > 0 && queryWords.every(w => normalized.includes(w))) return true;
+
+  if (stringSimilarity(q, normalized) >= SEARCH_MIN_SCORE) return true;
+
+  return false;
+}
+
+function filterSearchResults(results, query) {
+  if (!query || !query.trim()) return results;
+  return results.filter(game => isRelevantGame(game.name, query));
+}
+
 // ===================== STAR WIDGET =====================
 
 function createStarWidget(container, { value = 0, onChange, readonly = false, size = "1.2rem" }) {
@@ -310,16 +377,26 @@ async function initCatalog() {
         ordering: currentOrder
       });
 
+      let games = data.results || [];
       totalResults = data.count || 0;
 
-      if (!data.results || data.results.length === 0) {
-        showEmpty(gridEl, "No games match your search.");
+      if (currentSearch) {
+        games = filterSearchResults(games, currentSearch);
+        totalResults = games.length;
+      }
+
+      if (games.length === 0) {
+        if (currentSearch) {
+          showEmpty(gridEl, "No games found for '" + currentSearch + "'. Check the spelling or try a shorter title.");
+        } else {
+          showEmpty(gridEl, "No games match your search.");
+        }
         return;
       }
 
       gridEl.innerHTML = "";
 
-      for (const game of data.results) {
+      for (const game of games) {
         const card = document.createElement("div");
         card.className = "game-card";
 

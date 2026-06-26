@@ -32,14 +32,21 @@ async function apiFetch(path, params = {}) {
 }
 
 export async function searchGames({ search = "", page = 1, pageSize = 20, genres = "", platforms = "", ordering = "" } = {}) {
-  return apiFetch("/games", {
+  const params = {
     search,
     page,
     page_size: pageSize,
     genres,
     platforms,
     ordering
-  });
+  };
+
+  if (search) {
+    params.search_precise = true;
+    params.search_exact = false;
+  }
+
+  return apiFetch("/games", params);
 }
 
 export async function getGameDetail(id) {
