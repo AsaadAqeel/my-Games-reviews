@@ -39,6 +39,13 @@ function normalizeText(str) {
   return str.toLowerCase().trim().replace(/[^a-z0-9\s]/g, "").replace(/\s+/g, " ");
 }
 
+function dedupKey(name) {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "")
+    .replace(/(gameoftheyear|goty|complete|definitive|remastered|deluxe|ultimate|enhanced|collection|edition|anniversary|completeedition)+$/g, "");
+}
+
 function levenshteinDistance(a, b) {
   const m = a.length;
   const n = b.length;
@@ -397,8 +404,8 @@ async function loadSection({ gridSelector, ordering, pageSize = 6, minRatingCoun
 
     var seen = new Set();
     games = games.filter(function (g) {
-      var key = normalizeText(g.name);
-      if (seen.has(key)) return false;
+      var key = dedupKey(g.name);
+      if (!key || seen.has(key)) return false;
       seen.add(key);
       return true;
     });
@@ -519,10 +526,12 @@ async function loadFeaturedHero() {
   heroEl.appendChild(content);
 }
 
-function initHomepageSections() {
+async function initHomepageSections() {
   loadFeaturedHero();
-  loadSection({ gridSelector: '[data-grid="top-rated"]', ordering: "-rating", pageSize: 18, minRatingCount: 200 });
-  loadSection({ gridSelector: '[data-grid="popular"]', ordering: "-added", pageSize: 18, minRatingCount: 200 });
+  await Promise.all([
+    loadSection({ gridSelector: '[data-grid="top-rated"]', ordering: "-rating", pageSize: 18, minRatingCount: 200 }),
+    loadSection({ gridSelector: '[data-grid="popular"]', ordering: "-added", pageSize: 18, minRatingCount: 200 })
+  ]);
 
   const allGamesBtn = document.getElementById("all-games-btn");
   if (allGamesBtn) {
@@ -548,11 +557,11 @@ function initSectionScroll(section) {
   }
 
   leftArrow.addEventListener("click", () => {
-    grid.scrollBy({ left: -grid.clientWidth * 0.9, behavior: "smooth" });
+    grid.scrollBy({ left: -Math.round(grid.clientWidth * 0.9), behavior: "smooth" });
   });
 
   rightArrow.addEventListener("click", () => {
-    grid.scrollBy({ left: grid.clientWidth * 0.9, behavior: "smooth" });
+    grid.scrollBy({ left: Math.round(grid.clientWidth * 0.9), behavior: "smooth" });
   });
 
   grid.addEventListener("scroll", updateArrows, { passive: true });
