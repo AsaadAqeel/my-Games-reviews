@@ -329,6 +329,9 @@ function createLightbox(images, startIndex = 0) {
 
 // ===================== HOMEPAGE CURATED SECTIONS =====================
 
+const SHELF_TARGET = 30;
+const SHELF_MAX_PAGES = 4;
+
 // ===================== FEATURED HERO CONFIG =====================
 const FEATURED_SLUG = "elden-ring";
 const FEATURED_TAGLINE = "Open-world dark fantasy \u2014 punishing, beautiful, unforgettable.";
@@ -375,7 +378,7 @@ function renderCuratedCard(game) {
   return link;
 }
 
-async function loadSection({ gridSelector, ordering, pageSize = 6, minRatingCount = 0 }) {
+async function loadSection({ gridSelector, ordering, target = SHELF_TARGET, minRatingCount = 0 }) {
   const grid = document.querySelector(gridSelector);
   if (!grid) return;
 
@@ -389,46 +392,52 @@ async function loadSection({ gridSelector, ordering, pageSize = 6, minRatingCoun
   loadingMsg.textContent = "Loading\u2026";
   grid.appendChild(loadingMsg);
 
+  var accumulated = [];
+  var seen = new Set();
+
   try {
-    const fetchSize = minRatingCount > 0 ? Math.max(pageSize * 3, 40) : pageSize;
-    const data = await searchGames({ ordering, pageSize: fetchSize });
-    grid.innerHTML = "";
+    var page = 1;
+    var hasNext = true;
 
-    let games = data.results || [];
+    while (accumulated.length < target && hasNext && page <= SHELF_MAX_PAGES) {
+      var data = await searchGames({ ordering, pageSize: 40, page: page });
+      var results = data.results || [];
 
-    if (minRatingCount > 0) {
-      games = games.filter(function (g) {
-        return g.background_image && (g.ratings_count || 0) >= minRatingCount;
-      });
-    }
+      for (var j = 0; j < results.length; j++) {
+        if (accumulated.length >= target) break;
+        var g = results[j];
 
-    var seen = new Set();
-    games = games.filter(function (g) {
-      var key = dedupKey(g.name);
-      if (!key || seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    });
+        if (minRatingCount > 0) {
+          if (!g.background_image || (g.ratings_count || 0) < minRatingCount) continue;
+        } else if (!g.background_image) {
+          continue;
+        }
 
-    games = games.slice(0, pageSize);
+        var key = dedupKey(g.name);
+        if (!key || seen.has(key)) continue;
+        seen.add(key);
+        accumulated.push(g);
+      }
 
-    if (games.length === 0) {
-      var empty = document.createElement("div");
-      empty.className = "status-message";
-      empty.textContent = "No games available right now.";
-      grid.appendChild(empty);
-      return;
-    }
-
-    for (var i = 0; i < games.length; i++) {
-      grid.appendChild(renderCuratedCard(games[i]));
+      hasNext = !!data.next;
+      page++;
     }
   } catch (err) {
-    grid.innerHTML = "";
-    var error = document.createElement("div");
-    error.className = "status-message error";
-    error.textContent = err.message || "Failed to load games. Please try again later.";
-    grid.appendChild(error);
+    // Render whatever was accumulated so far; never throw
+  }
+
+  grid.innerHTML = "";
+
+  if (accumulated.length === 0) {
+    var empty = document.createElement("div");
+    empty.className = "status-message";
+    empty.textContent = "No games available right now.";
+    grid.appendChild(empty);
+    return;
+  }
+
+  for (var i = 0; i < accumulated.length; i++) {
+    grid.appendChild(renderCuratedCard(accumulated[i]));
   }
 }
 
@@ -529,8 +538,8 @@ async function loadFeaturedHero() {
 async function initHomepageSections() {
   loadFeaturedHero();
   await Promise.all([
-    loadSection({ gridSelector: '[data-grid="top-rated"]', ordering: "-rating", pageSize: 18, minRatingCount: 200 }),
-    loadSection({ gridSelector: '[data-grid="popular"]', ordering: "-added", pageSize: 18, minRatingCount: 200 })
+    loadSection({ gridSelector: '[data-grid="top-rated"]', ordering: "-rating", target: SHELF_TARGET, minRatingCount: 200 }),
+    loadSection({ gridSelector: '[data-grid="popular"]', ordering: "-added", target: SHELF_TARGET, minRatingCount: 200 })
   ]);
 
   const allGamesBtn = document.getElementById("all-games-btn");
