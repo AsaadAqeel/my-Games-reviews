@@ -1739,6 +1739,32 @@ footer a:hover { color: var(--accent-hover); }
   height: 16px;
 }
 
+.recommendations-refresh {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--bg-surface);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background var(--transition), color var(--transition), border-color var(--transition);
+  flex-shrink: 0;
+}
+
+.recommendations-refresh:hover {
+  background: var(--bg-card);
+  color: var(--text);
+  border-color: var(--text-muted);
+}
+
+.recommendations-refresh:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
 .curated-grid {
   display: flex;
   gap: 14px;

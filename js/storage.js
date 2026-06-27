@@ -33,6 +33,8 @@ export function addReview(gameId, review) {
     name: review.name || "Anonymous",
     gameName: review.gameName || "",
     gameImage: review.gameImage || "",
+    genres: review.genres || [],
+    tags: review.tags || [],
     date: Date.now()
   });
   saveAllReviews(all);
@@ -138,7 +140,9 @@ export function togglePlayed(gameId, snapshot) {
       image: snapshot.image,
       rating: snapshot.rating,
       released: snapshot.released,
-      addedAt: Date.now()
+      addedAt: Date.now(),
+      genres: snapshot.genres || [],
+      tags: snapshot.tags || []
     });
   }
   saveAllPlayed(list);
@@ -286,7 +290,9 @@ export function toggleFavorite(gameId, snapshot) {
       image: snapshot.image,
       rating: snapshot.rating,
       released: snapshot.released,
-      addedAt: Date.now()
+      addedAt: Date.now(),
+      genres: snapshot.genres || [],
+      tags: snapshot.tags || []
     });
   }
   saveAllFavorites(list);

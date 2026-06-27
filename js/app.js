@@ -1,5 +1,6 @@
 import { searchGames, getGameDetail, getGameScreenshots, getGenres, getPlatforms } from "./rawg.js";
 import { getReviews, addReview, deleteReview, getAllUserReviews, getAverageRating, getReviewCount, getAllAverages, getPlayedGames, isPlayed, togglePlayed, removePlayed, getLists, createList, renameList, deleteList, addGameToList, removeGameFromList, isGameInList, getFavorites, isFavorite, toggleFavorite, removeFavorite } from "./storage.js";
+import { initRecommendations } from "./recommendations/recommendations.js";
 
 // ===================== UTILITIES =====================
 
@@ -707,7 +708,8 @@ async function initHomepageSections() {
   loadFeaturedHero();
   await Promise.all([
     loadSection({ gridSelector: '[data-grid="top-rated"]', ordering: "-rating", target: SHELF_TARGET, minRatingCount: 200 }),
-    loadSection({ gridSelector: '[data-grid="popular"]', ordering: "-added", target: SHELF_TARGET, minRatingCount: 200 })
+    loadSection({ gridSelector: '[data-grid="popular"]', ordering: "-added", target: SHELF_TARGET, minRatingCount: 200 }),
+    initRecommendations(renderCuratedCard)
   ]);
 
   const allGamesBtn = document.getElementById("all-games-btn");
@@ -954,7 +956,9 @@ async function initCatalog() {
           name: game.name,
           image: game.background_image || "",
           rating: game.rating,
-          released: game.released
+          released: game.released,
+          genres: (game.genres || []).map(g => ({ slug: g.slug, name: g.name })),
+          tags: (game.tags || []).map(t => ({ slug: t.slug, name: t.name }))
         };
         card.appendChild(createFavStar(game.id, favSnapshot));
 
@@ -1209,7 +1213,9 @@ async function initGameDetail() {
       name: gameData.name,
       image: gameData.background_image || "",
       rating: gameData.rating,
-      released: gameData.released
+      released: gameData.released,
+      genres: (gameData.genres || []).map(g => ({ slug: g.slug, name: g.name })),
+      tags: (gameData.tags || []).map(t => ({ slug: t.slug, name: t.name }))
     });
     updatePlayedBtn();
   });
@@ -1222,7 +1228,9 @@ async function initGameDetail() {
     name: gameData.name,
     image: gameData.background_image || "",
     rating: gameData.rating,
-    released: gameData.released
+    released: gameData.released,
+    genres: (gameData.genres || []).map(g => ({ slug: g.slug, name: g.name })),
+    tags: (gameData.tags || []).map(t => ({ slug: t.slug, name: t.name }))
   };
   actionsRow.appendChild(createFavStar(gameId, detailFavSnapshot));
 
@@ -1534,7 +1542,9 @@ function renderReviewsSection(container, gameId) {
       body: bodyVal,
       name: nameVal || "Anonymous",
       gameName: gameData.name,
-      gameImage: gameData.background_image || ""
+      gameImage: gameData.background_image || "",
+      genres: (gameData.genres || []).map(g => ({ slug: g.slug, name: g.name })),
+      tags: (gameData.tags || []).map(t => ({ slug: t.slug, name: t.name }))
     });
 
     // Reset form
@@ -1711,7 +1721,9 @@ function initPlayedPage() {
         name: game.name,
         image: game.image || "",
         rating: game.rating,
-        released: game.released
+        released: game.released,
+        genres: game.genres || [],
+        tags: game.tags || []
       };
       card.appendChild(createFavStar(game.id, favSnapshot));
 
@@ -1798,7 +1810,9 @@ function initFavoritesPage() {
         name: game.name,
         image: game.image || "",
         rating: game.rating,
-        released: game.released
+        released: game.released,
+        genres: game.genres || [],
+        tags: game.tags || []
       };
       card.appendChild(createFavStar(game.id, favSnapshot, () => render()));
 
