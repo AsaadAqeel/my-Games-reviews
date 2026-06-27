@@ -1,6 +1,6 @@
 const REVIEWS_KEY = "gameReviews";
 
-function getAllReviews() {
+export function getAllReviews() {
   try {
     const data = localStorage.getItem(REVIEWS_KEY);
     return data ? JSON.parse(data) : {};
@@ -102,7 +102,7 @@ export function getAllAverages() {
 
 const PLAYED_KEY = "playedGames";
 
-function getAllPlayed() {
+export function getAllPlayed() {
   try {
     const data = localStorage.getItem(PLAYED_KEY);
     return data ? JSON.parse(data) : [];
@@ -252,7 +252,7 @@ export function getListGameIds() {
 
 const FAVORITES_KEY = "favoriteGames";
 
-function getAllFavorites() {
+export function getAllFavorites() {
   try {
     const data = localStorage.getItem(FAVORITES_KEY);
     return data ? JSON.parse(data) : [];
