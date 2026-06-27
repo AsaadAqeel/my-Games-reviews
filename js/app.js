@@ -11,10 +11,12 @@ function formatDate(ts) {
 
 function debounce(fn, ms) {
   let timer;
-  return (...args) => {
+  const debounced = (...args) => {
     clearTimeout(timer);
     timer = setTimeout(() => fn(...args), ms);
   };
+  debounced.cancel = () => clearTimeout(timer);
+  return debounced;
 }
 
 function getParam(name) {
@@ -768,6 +770,7 @@ async function initCatalog() {
   let currentOrder = "-rating";
   let totalResults = 0;
   let userAverages = {};
+  let activeSearchController = null;
 
   function renderSkeletons(count) {
     gridEl.innerHTML = "";
@@ -831,6 +834,12 @@ async function initCatalog() {
     currentPage = page;
     userAverages = getAllAverages();
 
+    if (activeSearchController) {
+      activeSearchController.abort();
+    }
+    activeSearchController = new AbortController();
+    const signal = activeSearchController.signal;
+
     renderSkeletons(12);
     statusEl.innerHTML = "";
     paginationEl.innerHTML = "";
@@ -842,7 +851,8 @@ async function initCatalog() {
         pageSize: 20,
         genres: currentGenre,
         platforms: currentPlatform,
-        ordering: currentOrder
+        ordering: currentOrder,
+        signal
       });
 
       let games = data.results || [];
@@ -953,6 +963,7 @@ async function initCatalog() {
 
       renderPagination(data);
     } catch (err) {
+      if (err.name === "AbortError") return;
       showError(gridEl, err.message || "An unexpected error occurred.");
     }
   }
@@ -997,7 +1008,10 @@ async function initCatalog() {
   });
   searchInput.addEventListener("keydown", (e) => {
     if (e.key === "Enter") {
+      e.preventDefault();
+      debouncedSearch.cancel();
       currentSearch = searchInput.value.trim();
+      updateResetBtn();
       loadGames(1);
     }
   });

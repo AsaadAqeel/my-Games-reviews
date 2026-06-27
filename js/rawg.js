@@ -12,9 +12,10 @@ function buildUrl(path, params = {}) {
 }
 
 async function apiFetch(path, params = {}) {
-  const url = buildUrl(path, params);
+  const { _signal, ...queryParams } = params;
+  const url = buildUrl(path, queryParams);
   try {
-    const res = await fetch(url);
+    const res = await fetch(url, _signal ? { signal: _signal } : undefined);
     if (res.status === 401 || res.status === 403) {
       throw { type: "auth", message: "Invalid API key \u2014 please check your RAWG API key in config.js." };
     }
@@ -26,19 +27,21 @@ async function apiFetch(path, params = {}) {
     }
     return await res.json();
   } catch (err) {
+    if (err.name === "AbortError") throw err;
     if (err.type) throw err;
     throw { type: "network", message: "Network error. Please check your connection and try again." };
   }
 }
 
-export async function searchGames({ search = "", page = 1, pageSize = 20, genres = "", platforms = "", ordering = "" } = {}) {
+export async function searchGames({ search = "", page = 1, pageSize = 20, genres = "", platforms = "", ordering = "", signal } = {}) {
   const params = {
     search,
     page,
     page_size: pageSize,
     genres,
     platforms,
-    ordering
+    ordering,
+    _signal: signal
   };
 
   if (search) {
