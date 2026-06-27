@@ -705,6 +705,7 @@ async function loadFeaturedHero() {
 }
 
 async function initHomepageSections() {
+  window.__checkpointBooted = true;
   loadFeaturedHero();
   await Promise.all([
     loadSection({ gridSelector: '[data-grid="top-rated"]', ordering: "-rating", target: SHELF_TARGET, minRatingCount: 200 }),
