@@ -33,8 +33,15 @@
         <a href="lists.html" class="main-nav__link">Lists</a>
         <a href="my-reviews.html" class="main-nav__link">My Reviews</a>
         <div id="auth-user-badge" class="auth-user-badge" style="display:none;">
-          <span class="auth-user-badge__email"></span>
-          <button type="button" class="auth-user-badge__signout" data-auth-signout>Sign Out</button>
+          <button type="button" class="auth-user-badge__trigger" aria-haspopup="true" aria-expanded="false">
+            <span class="auth-user-badge__avatar">👤</span>
+            <span class="auth-user-badge__name profile-name-display"></span>
+          </button>
+          <div class="profile-dropdown">
+            <a href="my-reviews.html" class="profile-dropdown__item">My Profile</a>
+            <a href="settings.html" class="profile-dropdown__item">Settings</a>
+            <button type="button" class="profile-dropdown__item profile-dropdown__item--signout" data-auth-signout>Sign Out</button>
+          </div>
         </div>
         <a href="auth.html" class="main-nav__auth">Sign up</a>
       </nav>

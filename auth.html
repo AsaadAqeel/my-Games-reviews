@@ -130,6 +130,31 @@
 
     .auth-form .form-error.visible { display: block; }
 
+    .auth-form .form-helper {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 0.3rem;
+      line-height: 1.4;
+    }
+
+    .form-section {
+      border: none;
+      padding: 0;
+      margin: 0 0 1.25rem;
+    }
+
+    .form-section__legend {
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--accent-soft);
+      padding: 0 0 0.5rem;
+      width: 100%;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 0.75rem;
+    }
+
     .auth-form__submit {
       width: 100%;
       padding: 0.75rem 1.5rem;
@@ -275,21 +300,35 @@
 
       <!-- Sign Up Form -->
       <form id="signup-form" class="auth-form" novalidate>
-        <div class="form-group">
-          <label for="signup-email">Email</label>
-          <input type="email" id="signup-email" placeholder="you@example.com" autocomplete="email" required>
-          <div class="form-error" id="signup-email-error"></div>
-        </div>
-        <div class="form-group">
-          <label for="signup-password">Password</label>
-          <input type="password" id="signup-password" placeholder="Min 6 characters" autocomplete="new-password" required>
-          <div class="form-error" id="signup-password-error"></div>
-        </div>
-        <div class="form-group">
-          <label for="signup-confirm">Confirm Password</label>
-          <input type="password" id="signup-confirm" placeholder="Repeat your password" autocomplete="new-password" required>
-          <div class="form-error" id="signup-confirm-error"></div>
-        </div>
+        <fieldset class="form-section">
+          <legend class="form-section__legend">Public Profile</legend>
+          <div class="form-group">
+            <label for="signup-username">Username</label>
+            <input type="text" id="signup-username" placeholder="Username" autocomplete="username" pattern="[a-zA-Z0-9_]+" maxlength="20" required>
+            <div class="form-helper">This name will be displayed publicly on your reviews and lists.</div>
+            <div class="form-error" id="signup-username-error"></div>
+          </div>
+        </fieldset>
+
+        <fieldset class="form-section">
+          <legend class="form-section__legend">Account Details (Private)</legend>
+          <div class="form-group">
+            <label for="signup-email">Email</label>
+            <input type="email" id="signup-email" placeholder="you@example.com" autocomplete="email" required>
+            <div class="form-error" id="signup-email-error"></div>
+          </div>
+          <div class="form-group">
+            <label for="signup-password">Password</label>
+            <input type="password" id="signup-password" placeholder="Min 6 characters" autocomplete="new-password" required>
+            <div class="form-error" id="signup-password-error"></div>
+          </div>
+          <div class="form-group">
+            <label for="signup-confirm">Confirm Password</label>
+            <input type="password" id="signup-confirm" placeholder="Repeat your password" autocomplete="new-password" required>
+            <div class="form-error" id="signup-confirm-error"></div>
+          </div>
+        </fieldset>
+
         <button type="submit" class="auth-form__submit" id="signup-submit">Create Account</button>
         <div class="auth-message" id="signup-message"></div>
       </form>
@@ -434,11 +473,25 @@
       e.preventDefault();
       clearMessages();
 
+      const username = document.getElementById("signup-username").value.trim();
       const email    = document.getElementById("signup-email").value.trim();
       const password = document.getElementById("signup-password").value;
       const confirm  = document.getElementById("signup-confirm").value;
 
       let hasError = false;
+
+      if (!username) {
+        showError("signup-username", "signup-username-error", "Username is required.");
+        hasError = true;
+      } else if (!/^[a-zA-Z0-9_]+$/.test(username)) {
+        showError("signup-username", "signup-username-error", "Only letters, numbers, and underscores allowed.");
+        hasError = true;
+      } else if (username.length > 20) {
+        showError("signup-username", "signup-username-error", "Username must be 20 characters or less.");
+        hasError = true;
+      } else {
+        clearError("signup-username-error");
+      }
 
       if (!email || !isValidEmail(email)) {
         showError("signup-email", "signup-email-error", "Please enter a valid email address.");
@@ -465,7 +518,15 @@
 
       setLoading("signup-submit", true);
 
-      const { data, error } = await supabase.auth.signUp({ email, password });
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            username
+          }
+        }
+      });
 
       setLoading("signup-submit", false);
 
