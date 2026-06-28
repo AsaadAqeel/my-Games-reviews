@@ -6,6 +6,25 @@ const SUPABASE_ANON_KEY = "sb_publishable_Dc7d2wJF_UK_n6qtz_uUvw_FnYb5s_W";
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 let currentUser = null;
+const authListeners = [];
+
+// ===================== AUTH STATE SUBSCRIPTION =====================
+
+/**
+ * Subscribe to auth state changes. Called with (user | null) on every change.
+ * Returns an unsubscribe function.
+ */
+export function onAuthChange(fn) {
+  authListeners.push(fn);
+  return () => {
+    const idx = authListeners.indexOf(fn);
+    if (idx !== -1) authListeners.splice(idx, 1);
+  };
+}
+
+function notifyAuthListeners(user) {
+  for (const fn of authListeners) fn(user);
+}
 
 // ===================== UI TOGGLE =====================
 
@@ -39,8 +58,10 @@ function applyAuthUI(user) {
       const dropdown = userBadge.querySelector(".profile-dropdown");
       if (dropdown) dropdown.classList.remove("show");
     }
-    console.log("[auth-guard] badge display:", userBadge.style.display, "user:", user?.email);
   }
+
+  // Notify subscribers (app.js uses this to clear UI on logout)
+  notifyAuthListeners(user);
 }
 
 // ===================== PROFILE USERNAME =====================
@@ -56,10 +77,7 @@ async function loadProfileUsername(user) {
       .eq("id", user.id)
       .single();
 
-    console.log("[auth-guard] profiles query result:", { data, error });
-
     nameEl.textContent = (error || !data?.username) ? "User" : data.username;
-    console.log("[auth-guard] header display name set to:", nameEl.textContent);
   } catch (err) {
     console.error("[auth-guard] loadProfileUsername failed:", err);
     nameEl.textContent = "User";
@@ -111,6 +129,7 @@ function showSignInPrompt() {
 
 async function handleSignOut() {
   await supabase.auth.signOut();
+  currentUser = null;
 }
 
 // ===================== INIT =====================
@@ -123,13 +142,11 @@ async function initAuthGuard() {
   // Profile dropdown toggle
   const triggerBtn = document.querySelector(".auth-user-badge__trigger");
   const dropdown = document.querySelector(".profile-dropdown");
-  console.log("[auth-guard] dropdown init:", { triggerBtn, dropdown });
   if (triggerBtn && dropdown) {
     triggerBtn.addEventListener("click", (e) => {
       e.stopPropagation();
       const isOpen = dropdown.classList.toggle("show");
       triggerBtn.setAttribute("aria-expanded", String(isOpen));
-      console.log("[auth-guard] dropdown toggled:", isOpen);
     });
 
     // Close dropdown when clicking outside

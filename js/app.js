@@ -1,6 +1,6 @@
 import { searchGames, getGameDetail, getGameScreenshots, getGenres, getPlatforms } from "./rawg.js";
 import { initRecommendations } from "./recommendations/recommendations.js";
-import { ensureAuth } from "./auth-guard.js";
+import { ensureAuth, onAuthChange } from "./auth-guard.js";
 import {
   syncAll, isFavorite, toggleFavorite,
   isPlayed, togglePlayed,
@@ -146,6 +146,54 @@ function isFavCached(gameId) {
 
 function isPlayedCached(gameId) {
   return syncState.played.has(Number(gameId));
+}
+
+// ===================== CLEAR USER UI =====================
+
+/**
+ * Wipes all user-specific DOM containers and resets the sync cache.
+ * Called on logout to ensure zero lingering data from the previous session.
+ */
+function clearLocalUI() {
+  syncState = { favorites: new Set(), played: new Set(), lists: [], listEntries: {} };
+  syncReady = null;
+
+  // Played page
+  const playedGrid = document.getElementById("played-grid");
+  if (playedGrid) playedGrid.innerHTML = "";
+
+  // Favorites page
+  const favGrid = document.getElementById("favorites-grid");
+  if (favGrid) favGrid.innerHTML = "";
+
+  // Lists page
+  const listsContainer = document.getElementById("lists-container");
+  if (listsContainer) listsContainer.innerHTML = "";
+
+  // My reviews page
+  const reviewsList = document.getElementById("my-reviews-list");
+  if (reviewsList) reviewsList.innerHTML = "";
+
+  // Game detail: reviews section
+  const reviewsSection = document.getElementById("reviews-section");
+  if (reviewsSection) reviewsSection.innerHTML = "";
+
+  // Dismiss any lingering sign-in prompt overlay
+  const prompt = document.getElementById("auth-signin-prompt");
+  if (prompt) prompt.remove();
+
+  // Clear any fav-star buttons on catalog/homepage cards
+  document.querySelectorAll(".fav-star[aria-pressed='true']").forEach(btn => {
+    btn.setAttribute("aria-pressed", "false");
+    btn.setAttribute("aria-label", "Add to favorites");
+  });
+
+  // Reset played buttons
+  document.querySelectorAll(".played-btn--active").forEach(btn => {
+    btn.textContent = "Play";
+    btn.classList.remove("played-btn--active");
+    btn.setAttribute("aria-pressed", "false");
+  });
 }
 
 // ===================== STAR WIDGET =====================
@@ -1741,10 +1789,15 @@ function renderReviewsSection(container, gameId) {
 
 // ===================== PLAYED PAGE =====================
 
-function initPlayedPage() {
+async function initPlayedPage() {
   const gridEl = document.getElementById("played-grid");
-  const statusEl = document.getElementById("played-status");
   const sortSelect = document.getElementById("played-sort");
+
+  const user = await ensureAuth();
+  if (!user) {
+    if (gridEl) gridEl.innerHTML = "";
+    return;
+  }
 
   let currentSort = "recent";
 
@@ -1946,8 +1999,14 @@ async function initFavoritesPage() {
 
 // ===================== LISTS PAGE =====================
 
-function initListsPage() {
+async function initListsPage() {
   const listsContainer = document.getElementById("lists-container");
+
+  const user = await ensureAuth();
+  if (!user) {
+    if (listsContainer) listsContainer.innerHTML = "";
+    return;
+  }
 
   let selectedListId = null;
 
@@ -2330,11 +2389,18 @@ document.addEventListener("DOMContentLoaded", async () => {
   initHeaderNav();
   initHeaderSearch();
 
+  // Subscribe to auth state changes — wipe UI on logout
+  onAuthChange((user) => {
+    if (!user) clearLocalUI();
+  });
+
   const path = window.location.pathname;
 
   // Pre-fetch user data for star buttons on catalog/homepage
+  // Only if a session exists — never sync for guests
   if (isCatalogPage() || isHomePage()) {
-    await ensureSync();
+    const user = await getCurrentUser();
+    if (user) await ensureSync();
   }
 
   if (path.endsWith("played.html")) {
