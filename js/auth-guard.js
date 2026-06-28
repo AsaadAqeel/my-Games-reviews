@@ -33,16 +33,31 @@ function applyAuthUI(user) {
   if (userBadge) {
     if (user) {
       userBadge.style.display = "flex";
-      const nameEl = userBadge.querySelector(".profile-name-display");
-      if (nameEl) {
-        const username = user.email.split("@")[0];
-        nameEl.textContent = username;
-      }
+      loadProfileUsername(user);
     } else {
       userBadge.style.display = "none";
       const dropdown = userBadge.querySelector(".profile-dropdown");
       if (dropdown) dropdown.classList.remove("show");
     }
+  }
+}
+
+// ===================== PROFILE USERNAME =====================
+
+async function loadProfileUsername(user) {
+  const nameEl = document.querySelector(".profile-name-display");
+  if (!nameEl) return;
+
+  try {
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("username")
+      .eq("id", user.id)
+      .single();
+
+    nameEl.textContent = (error || !data?.username) ? "User" : data.username;
+  } catch {
+    nameEl.textContent = "User";
   }
 }
 
