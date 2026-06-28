@@ -1,6 +1,7 @@
 import { searchGames, getGameDetail, getGameScreenshots, getGenres, getPlatforms } from "./rawg.js";
 import { getReviews, addReview, deleteReview, getAllUserReviews, getAverageRating, getReviewCount, getAllAverages, getPlayedGames, isPlayed, togglePlayed, removePlayed, getLists, createList, renameList, deleteList, addGameToList, removeGameFromList, isGameInList, getFavorites, isFavorite, toggleFavorite, removeFavorite } from "./storage.js";
 import { initRecommendations } from "./recommendations/recommendations.js";
+import { ensureAuth } from "./auth-guard.js";
 
 // ===================== UTILITIES =====================
 
@@ -224,9 +225,11 @@ function createFavStar(gameId, snapshot, onToggle) {
   btn.setAttribute("aria-pressed", String(fav));
   btn.setAttribute("aria-label", fav ? "Remove from favorites" : "Add to favorites");
 
-  btn.addEventListener("click", (e) => {
+  btn.addEventListener("click", async (e) => {
     e.preventDefault();
     e.stopPropagation();
+    const user = await ensureAuth();
+    if (!user) return;
     const isNowFav = toggleFavorite(gameId, snapshot);
     btn.setAttribute("aria-pressed", String(isNowFav));
     btn.setAttribute("aria-label", isNowFav ? "Remove from favorites" : "Add to favorites");
@@ -1208,7 +1211,9 @@ async function initGameDetail() {
   }
   updatePlayedBtn();
 
-  playedBtn.addEventListener("click", () => {
+  playedBtn.addEventListener("click", async () => {
+    const user = await ensureAuth();
+    if (!user) return;
     togglePlayed(gameId, {
       id: gameData.id,
       name: gameData.name,
@@ -1349,8 +1354,10 @@ async function initGameDetail() {
     if (e.key === "Escape") closeListMenu();
   }
 
-  listToggle.addEventListener("click", function(e) {
+  listToggle.addEventListener("click", async function(e) {
     e.stopPropagation();
+    const user = await ensureAuth();
+    if (!user) return;
     var isOpen = listMenu.style.display !== "none";
     if (isOpen) {
       closeListMenu();
@@ -1500,7 +1507,9 @@ function renderReviewsSection(container, gameId) {
   submitBtn.textContent = "Submit Review";
   form.appendChild(submitBtn);
 
-  submitBtn.addEventListener("click", () => {
+  submitBtn.addEventListener("click", async () => {
+    const user = await ensureAuth();
+    if (!user) return;
     const rating = widget.getValue();
     const titleVal = titleInput.value.trim();
     const bodyVal = bodyInput.value.trim();
@@ -1851,7 +1860,9 @@ function initListsPage() {
     createBtn.className = "lists-create__btn";
     createBtn.textContent = "+ Create New List";
 
-    function doCreate() {
+    async function doCreate() {
+      const user = await ensureAuth();
+      if (!user) return;
       const name = createInput.value.trim();
       if (!name) return;
       createList(name);
