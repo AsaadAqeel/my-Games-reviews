@@ -1400,6 +1400,11 @@ async function initGameDetail() {
       item.appendChild(nameSpan);
 
       checkbox.addEventListener("change", async function() {
+        const user = await ensureAuth();
+        if (!user) {
+          checkbox.checked = !checkbox.checked;
+          return;
+        }
         var snapshot = {
           id: gameData.id,
           name: gameData.name,
@@ -1774,7 +1779,11 @@ function renderReviewsSection(container, gameId) {
         deleteBtn.className = "delete-review-btn";
         deleteBtn.textContent = "Delete My Review";
         deleteBtn.addEventListener("click", async () => {
+          const user = await ensureAuth();
+          if (!user) return;
           if (confirm("Delete this review?")) {
+            deleteBtn.disabled = true;
+            deleteBtn.textContent = "Deleting...";
             await deleteReviewDb(review.id);
             renderReviewsSection(container, gameId);
           }
@@ -1876,6 +1885,8 @@ async function initPlayedPage() {
       removeBtn.addEventListener("click", async (e) => {
         e.preventDefault();
         e.stopPropagation();
+        removeBtn.disabled = true;
+        removeBtn.textContent = "Removing...";
         await remove("played_games", { id: game.id });
         render();
       });
@@ -2091,6 +2102,8 @@ async function initListsPage() {
         e.stopPropagation();
         const newName = prompt("Rename list:", list.name);
         if (newName && newName.trim()) {
+          renameBtn.disabled = true;
+          renameBtn.textContent = "Saving...";
           await renameList(list.id, newName.trim());
           render();
         }
@@ -2105,6 +2118,8 @@ async function initListsPage() {
       deleteBtn.addEventListener("click", async (e) => {
         e.stopPropagation();
         if (confirm("Delete \"" + list.name + "\"? This cannot be undone.")) {
+          deleteBtn.disabled = true;
+          deleteBtn.textContent = "Deleting...";
           await deleteList(list.id);
           if (selectedListId === list.id) selectedListId = null;
           render();
@@ -2179,6 +2194,8 @@ async function initListsPage() {
             removeBtn.addEventListener("click", async (e) => {
               e.preventDefault();
               e.stopPropagation();
+              removeBtn.disabled = true;
+              removeBtn.textContent = "Removing...";
               await removeGameFromList(list.id, game.game_id);
               render();
             });
@@ -2278,6 +2295,8 @@ async function initMyReviewsPage() {
       deleteBtn.textContent = "Delete My Review";
       deleteBtn.addEventListener("click", async () => {
         if (confirm("Delete this review?")) {
+          deleteBtn.disabled = true;
+          deleteBtn.textContent = "Deleting...";
           await deleteReviewDb(review.id);
           render();
         }
