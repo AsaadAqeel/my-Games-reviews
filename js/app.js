@@ -1411,10 +1411,10 @@ async function initGameDetail() {
       var checkbox = document.createElement("input");
       checkbox.type = "checkbox";
       checkbox.checked = gameIds.has(Number(gameId));
-      checkbox.setAttribute("aria-label", list.name);
+      checkbox.setAttribute("aria-label", list.list_name);
 
       var nameSpan = document.createElement("span");
-      nameSpan.textContent = list.name;
+      nameSpan.textContent = list.list_name;
 
       item.appendChild(checkbox);
       item.appendChild(nameSpan);
@@ -2098,7 +2098,7 @@ async function initListsPage() {
       const titleBtn = document.createElement("button");
       titleBtn.type = "button";
       titleBtn.className = "list-card__title";
-      titleBtn.textContent = list.name + " (" + games.length + ")";
+      titleBtn.textContent = list.list_name + " (" + games.length + ")";
       titleBtn.setAttribute("aria-expanded", selectedListId === list.id ? "true" : "false");
 
       const controls = document.createElement("div");
@@ -2108,11 +2108,11 @@ async function initListsPage() {
       renameBtn.type = "button";
       renameBtn.className = "list-card__btn";
       renameBtn.textContent = "Rename";
-      renameBtn.setAttribute("aria-label", "Rename " + list.name);
+      renameBtn.setAttribute("aria-label", "Rename " + list.list_name);
 
       renameBtn.addEventListener("click", async (e) => {
         e.stopPropagation();
-        const newName = prompt("Rename list:", list.name);
+        const newName = prompt("Rename list:", list.list_name);
         if (newName && newName.trim()) {
           renameBtn.disabled = true;
           renameBtn.textContent = "Saving...";
@@ -2125,11 +2125,11 @@ async function initListsPage() {
       deleteBtn.type = "button";
       deleteBtn.className = "list-card__btn list-card__btn--danger";
       deleteBtn.textContent = "Delete";
-      deleteBtn.setAttribute("aria-label", "Delete " + list.name);
+      deleteBtn.setAttribute("aria-label", "Delete " + list.list_name);
 
       deleteBtn.addEventListener("click", async (e) => {
         e.stopPropagation();
-        if (confirm("Delete \"" + list.name + "\"? This cannot be undone.")) {
+        if (confirm("Delete \"" + list.list_name + "\"? This cannot be undone.")) {
           deleteBtn.disabled = true;
           deleteBtn.textContent = "Deleting...";
           await deleteList(list.id);
@@ -2203,7 +2203,7 @@ async function initListsPage() {
             removeBtn.type = "button";
             removeBtn.className = "remove-btn";
             removeBtn.textContent = "Remove";
-            removeBtn.setAttribute("aria-label", "Remove " + (g.name || "Game") + " from " + list.name);
+            removeBtn.setAttribute("aria-label", "Remove " + (g.name || "Game") + " from " + list.list_name);
             removeBtn.addEventListener("click", async (e) => {
               e.preventDefault();
               e.stopPropagation();

@@ -368,7 +368,7 @@ export async function fetchLists() {
  * Creates a new list.
  */
 export async function createList(name) {
-  return save("lists", { name });
+  return save("lists", { list_name: name });
 }
 
 /**
@@ -380,7 +380,7 @@ export async function renameList(listId, newName) {
 
   const { error } = await supabase
     .from("lists")
-    .update({ name: newName })
+    .update({ list_name: newName })
     .eq("id", listId);
 
   if (error) {
