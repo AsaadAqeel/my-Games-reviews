@@ -134,33 +134,6 @@ async function initAuthGuard() {
     btn.addEventListener("click", handleSignOut);
   });
 
-  // Profile dropdown toggle
-  const triggerBtn = document.querySelector(".auth-user-badge__trigger");
-  const dropdown = document.querySelector(".profile-dropdown");
-  if (triggerBtn && dropdown) {
-    triggerBtn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      const isOpen = dropdown.classList.toggle("show");
-      triggerBtn.setAttribute("aria-expanded", String(isOpen));
-    });
-
-    // Close dropdown when clicking outside
-    window.addEventListener("click", (e) => {
-      if (!dropdown.contains(e.target) && !triggerBtn.contains(e.target)) {
-        dropdown.classList.remove("show");
-        triggerBtn.setAttribute("aria-expanded", "false");
-      }
-    });
-
-    // Close dropdown on Escape key
-    window.addEventListener("keydown", (e) => {
-      if (e.key === "Escape") {
-        dropdown.classList.remove("show");
-        triggerBtn.setAttribute("aria-expanded", "false");
-      }
-    });
-  }
-
   // Check initial session
   const { data: { session } } = await supabase.auth.getSession();
   applyAuthUI(session?.user ?? null);
