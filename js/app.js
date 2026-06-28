@@ -2,6 +2,7 @@ import { searchGames, getGameDetail, getGameScreenshots, getGenres, getPlatforms
 import { getReviews, addReview, deleteReview, getAllUserReviews, getAverageRating, getReviewCount, getAllAverages, getPlayedGames, isPlayed, togglePlayed, removePlayed, getLists, createList, renameList, deleteList, addGameToList, removeGameFromList, isGameInList, getFavorites, isFavorite, toggleFavorite, removeFavorite } from "./storage.js";
 import { initRecommendations } from "./recommendations/recommendations.js";
 import { ensureAuth } from "./auth-guard.js";
+import { fetchUserFavorites } from "./supabase-storage.js";
 
 // ===================== UTILITIES =====================
 
@@ -1751,30 +1752,39 @@ function initPlayedPage() {
 
 // ===================== FAVORITES PAGE =====================
 
-function initFavoritesPage() {
+async function initFavoritesPage() {
   const gridEl = document.getElementById("favorites-grid");
 
-  function render() {
-    const games = getFavorites();
+  const user = await ensureAuth();
+  if (!user) return;
+
+  async function render() {
+    const { favorites, error } = await fetchUserFavorites();
     gridEl.innerHTML = "";
 
-    if (games.length === 0) {
+    if (error) {
+      showEmpty(gridEl, "Failed to load favorites. Please try again.");
+      console.error(error);
+      return;
+    }
+
+    if (favorites.length === 0) {
       showEmpty(gridEl, "No favorites yet \u2014 tap the star on any game.");
       return;
     }
 
-    for (const game of games) {
+    for (const game of favorites) {
       const card = document.createElement("div");
       card.className = "game-card";
 
       const link = document.createElement("a");
-      link.href = "game.html?id=" + game.id;
-      link.setAttribute("aria-label", "View details for " + game.name);
+      link.href = "game.html?id=" + game.game_id;
+      link.setAttribute("aria-label", "View details for " + (game.game_name || "Game"));
 
       const img = document.createElement("img");
       img.className = "game-card__image";
-      img.src = game.image || "";
-      img.alt = game.name;
+      img.src = game.game_image || "";
+      img.alt = game.game_name || "Game";
       img.loading = "lazy";
       img.onerror = function() {
         this.classList.add("img-error");
@@ -1793,13 +1803,13 @@ function initFavoritesPage() {
 
       const title = document.createElement("div");
       title.className = "game-card__title";
-      title.textContent = game.name;
+      title.textContent = game.game_name || "Game";
       body.appendChild(title);
 
       const info = document.createElement("div");
       info.className = "game-card__genres";
-      if (game.released) {
-        info.textContent = "Released: " + game.released;
+      if (game.game_released) {
+        info.textContent = "Released: " + game.game_released;
       }
       body.appendChild(info);
 
@@ -1808,7 +1818,7 @@ function initFavoritesPage() {
 
       const rawgScore = document.createElement("span");
       rawgScore.className = "game-card__rawg-score";
-      rawgScore.textContent = "RAWG: " + (game.rating != null ? game.rating.toFixed(1) : "N/A");
+      rawgScore.textContent = "RAWG: " + (game.game_rating != null ? Number(game.game_rating).toFixed(1) : "N/A");
       scores.appendChild(rawgScore);
 
       body.appendChild(scores);
@@ -1816,15 +1826,15 @@ function initFavoritesPage() {
       card.appendChild(link);
 
       const favSnapshot = {
-        id: game.id,
-        name: game.name,
-        image: game.image || "",
-        rating: game.rating,
-        released: game.released,
-        genres: game.genres || [],
-        tags: game.tags || []
+        id: game.game_id,
+        name: game.game_name || "Game",
+        image: game.game_image || "",
+        rating: game.game_rating,
+        released: game.game_released,
+        genres: game.game_genres || [],
+        tags: game.game_tags || []
       };
-      card.appendChild(createFavStar(game.id, favSnapshot, () => render()));
+      card.appendChild(createFavStar(game.game_id, favSnapshot, () => render()));
 
       gridEl.appendChild(card);
     }

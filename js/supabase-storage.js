@@ -5,76 +5,127 @@ const SUPABASE_ANON_KEY = "sb_publishable_Dc7d2wJF_UK_n6qtz_uUvw_FnYb5s_W";
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-// ===================== AUTH HELPERS =====================
+// ===================== AUTH HELPER =====================
+
+async function requireAuth() {
+  const { data: { user }, error } = await supabase.auth.getUser();
+  if (error || !user) return null;
+  return user;
+}
+
+// ===================== ADD TO FAVORITES =====================
 
 /**
- * Returns the currently authenticated user, or null if not logged in.
- * This is the primary gate before any user_games query.
+ * Inserts a game into the favorites table.
+ * The user_id column has DEFAULT auth.uid(), so Supabase fills it automatically.
+ * RLS INSERT policy (auth.uid() = user_id) is the enforcement layer.
+ *
+ * @param {number} gameId
+ * @param {object} snapshot - { name, image, rating, released, genres, tags }
+ * @returns {{ success: boolean, error?: string }}
  */
-export async function getCurrentUser() {
-  const { data: { user }, error } = await supabase.auth.getUser();
-  if (error) {
-    console.error("getUser error:", error.message);
-    return null;
+export async function addToFavorites(gameId, snapshot = {}) {
+  const user = await requireAuth();
+  if (!user) {
+    return { success: false, error: "You must be signed in to add favorites." };
   }
-  return user;
+
+  const { error } = await supabase
+    .from("favorites")
+    .insert({
+      game_id: gameId,
+      game_name: snapshot.name || null,
+      game_image: snapshot.image || null,
+      game_rating: snapshot.rating || null,
+      game_released: snapshot.released || null,
+      game_genres: snapshot.genres || [],
+      game_tags: snapshot.tags || []
+    });
+
+  if (error) {
+    console.error("addToFavorites error:", error.message);
+    return { success: false, error: "Failed to add favorite. Please try again." };
+  }
+
+  return { success: true };
+}
+
+// ===================== REMOVE FROM FAVORITES =====================
+
+/**
+ * Removes a game from the favorites table.
+ * RLS ensures a user can only delete their own rows.
+ *
+ * @param {number} gameId
+ * @returns {{ success: boolean, error?: string }}
+ */
+export async function removeFromFavorites(gameId) {
+  const user = await requireAuth();
+  if (!user) {
+    return { success: false, error: "You must be signed in." };
+  }
+
+  const { error } = await supabase
+    .from("favorites")
+    .delete()
+    .eq("game_id", gameId);
+
+  if (error) {
+    console.error("removeFromFavorites error:", error.message);
+    return { success: false, error: "Failed to remove favorite. Please try again." };
+  }
+
+  return { success: true };
 }
 
 // ===================== TOGGLE FAVORITE =====================
 
 /**
- * Toggles a game in the user_games table with type='favorite'.
- * If the game is already a favorite, it removes it.
- * If not, it inserts a new record.
+ * Toggles a game in the favorites table.
+ * Checks if the game is already favorited, then adds or removes accordingly.
  *
- * RLS policy: INSERT/DELETE WHERE user_id = auth.uid()
- *
- * @param {number} gameId - RAWG game ID
- * @param {object} snapshot - Game metadata to store (name, image, etc.)
+ * @param {number} gameId
+ * @param {object} snapshot - { name, image, rating, released, genres, tags }
  * @returns {{ added: boolean, error?: string }}
  */
 export async function toggleFavorite(gameId, snapshot = {}) {
-  const user = await getCurrentUser();
+  const user = await requireAuth();
   if (!user) {
     return { added: false, error: "You must be signed in to manage favorites." };
   }
 
   // Check if already favorited
   const { data: existing, error: fetchError } = await supabase
-    .from("user_games")
+    .from("favorites")
     .select("id")
-    .eq("user_id", user.id)
     .eq("game_id", gameId)
-    .eq("type", "favorite")
     .maybeSingle();
 
   if (fetchError) {
-    console.error("toggleFavorite fetch error:", fetchError.message);
+    console.error("toggleFavorite check error:", fetchError.message);
     return { added: false, error: "Failed to check favorites. Please try again." };
   }
 
-  // Already a favorite -> remove it
+  // Already favorited -> remove
   if (existing) {
     const { error: deleteError } = await supabase
-      .from("user_games")
+      .from("favorites")
       .delete()
       .eq("id", existing.id);
 
     if (deleteError) {
-      console.error("toggleFavorite delete error:", deleteError.message);
+      console.error("toggleFavorite remove error:", deleteError.message);
       return { added: false, error: "Failed to remove favorite. Please try again." };
     }
 
     return { added: false };
   }
 
-  // Not a favorite -> insert it
+  // Not favorited -> insert
   const { error: insertError } = await supabase
-    .from("user_games")
+    .from("favorites")
     .insert({
-      user_id: user.id,
       game_id: gameId,
-      type: "favorite",
       game_name: snapshot.name || null,
       game_image: snapshot.image || null,
       game_rating: snapshot.rating || null,
@@ -91,121 +142,53 @@ export async function toggleFavorite(gameId, snapshot = {}) {
   return { added: true };
 }
 
-// ===================== FETCH USER GAMES =====================
+// ===================== FETCH USER FAVORITES =====================
 
 /**
- * Fetches all games of a given type for the current user.
- * RLS ensures only the user's own rows are returned.
+ * Fetches all favorites for the logged-in user.
+ * RLS policy 'Users can view their own favorites' ensures only the
+ * authenticated user's rows are returned — no manual user_id filter needed.
  *
- * @param {string} type - 'favorite', 'played', or 'list' (matches your user_games.type)
- * @returns {{ games: Array, error?: string }}
+ * @returns {{ favorites: Array, error?: string }}
  */
-export async function fetchUserGames(type = "favorite") {
-  const user = await getCurrentUser();
+export async function fetchUserFavorites() {
+  const user = await requireAuth();
   if (!user) {
-    return { games: [], error: "You must be signed in to view your games." };
+    return { favorites: [], error: "You must be signed in to view your favorites." };
   }
 
   const { data, error } = await supabase
-    .from("user_games")
+    .from("favorites")
     .select("*")
-    .eq("user_id", user.id)
-    .eq("type", type)
     .order("created_at", { ascending: false });
 
   if (error) {
-    console.error("fetchUserGames error:", error.message);
-    return { games: [], error: "Failed to load your games. Please try again." };
+    console.error("fetchUserFavorites error:", error.message);
+    return { favorites: [], error: "Failed to load favorites. Please try again." };
   }
 
-  return { games: data || [] };
+  return { favorites: data || [] };
 }
 
 // ===================== CHECK IF FAVORITED =====================
 
 /**
- * Returns true if the game is in the user's favorites.
- * Useful for rendering a filled/empty star on game cards.
+ * Checks if a game is in the user's favorites.
+ * Returns false for unauthenticated users (RLS would reject the query anyway).
  *
  * @param {number} gameId
  * @returns {boolean}
  */
 export async function isFavorite(gameId) {
-  const user = await getCurrentUser();
+  const user = await requireAuth();
   if (!user) return false;
 
   const { data, error } = await supabase
-    .from("user_games")
+    .from("favorites")
     .select("id")
-    .eq("user_id", user.id)
     .eq("game_id", gameId)
-    .eq("type", "favorite")
     .maybeSingle();
 
   if (error) return false;
   return !!data;
-}
-
-// ===================== RENDER EXAMPLE =====================
-
-/**
- * Example: render a list of favorite games into a container element.
- * Call this on your favorites.html page.
- */
-export async function renderFavorites(container) {
-  container.innerHTML = '<div class="spinner"></div>';
-
-  const { games, error } = await fetchUserGames("favorite");
-
-  if (error) {
-    container.innerHTML = `<div class="status-message error">${error}</div>`;
-    return;
-  }
-
-  if (games.length === 0) {
-    container.innerHTML = `
-      <div class="empty-state">
-        <div class="empty-state__title">No favorites yet</div>
-        <p>Browse games and tap the star to add favorites.</p>
-      </div>`;
-    return;
-  }
-
-  container.innerHTML = "";
-
-  for (const game of games) {
-    const card = document.createElement("div");
-    card.className = "game-card";
-
-    const link = document.createElement("a");
-    link.href = "game.html?id=" + game.game_id;
-
-    if (game.game_image) {
-      const img = document.createElement("img");
-      img.className = "game-card__image";
-      img.src = game.game_image;
-      img.alt = game.game_name || "Game";
-      img.loading = "lazy";
-      link.appendChild(img);
-    }
-
-    const body = document.createElement("div");
-    body.className = "game-card__body";
-
-    const title = document.createElement("div");
-    title.className = "game-card__title";
-    title.textContent = game.game_name || "Game #" + game.game_id;
-    body.appendChild(title);
-
-    if (game.game_rating != null) {
-      const rating = document.createElement("div");
-      rating.className = "game-card__rawg-score";
-      rating.textContent = "\u2605 " + Number(game.game_rating).toFixed(1);
-      body.appendChild(rating);
-    }
-
-    link.appendChild(body);
-    card.appendChild(link);
-    container.appendChild(card);
-  }
 }
