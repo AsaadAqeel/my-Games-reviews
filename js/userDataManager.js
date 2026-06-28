@@ -552,8 +552,8 @@ export async function syncAll() {
     const favoritesData = favResult.data || [];
     const playedData = playedResult.data || [];
     const reviewsData = reviewsResult.data || [];
-    const favoriteIds = new Set(favoritesData.map(r => r.game_id));
-    const playedIds = new Set(playedData.map(r => r.game_id));
+    const favoriteIds = new Set(favoritesData.map(r => Number(r.game_id)));
+    const playedIds = new Set(playedData.map(r => Number(r.game_id)));
 
     console.log("[syncAll] Raw counts:", {
       favorites: favoritesData.length,
@@ -575,7 +575,7 @@ export async function syncAll() {
         if (entryResults[i].error) {
           console.error("[syncAll] list_entries fetch error for list", list.id + ":", entryResults[i].error);
         }
-        listEntriesMap[list.id] = new Set((entryResults[i].data || []).map(r => r.game_id));
+        listEntriesMap[list.id] = new Set((entryResults[i].data || []).map(r => Number(r.game_id)));
       });
     }
 
