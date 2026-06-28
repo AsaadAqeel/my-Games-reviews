@@ -2228,3 +2228,39 @@ footer a:hover { color: var(--accent-hover); }
     display: none;
   }
 }
+
+/* ===== Guest Prompt Card ===== */
+.guest-prompt {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.75rem;
+  max-width: 460px;
+  margin: 1rem auto 2rem;
+  padding: 2rem 1.5rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.guest-prompt__icon { color: var(--accent); }
+.guest-prompt__title { margin: 0; font-size: 1.15rem; color: var(--text); }
+.guest-prompt__text { margin: 0; font-size: 0.9rem; color: var(--text-muted); }
+
+.guest-prompt__actions { display: flex; gap: 0.6rem; margin-top: 0.5rem; flex-wrap: wrap; justify-content: center; }
+
+.guest-prompt__btn {
+  padding: 0.55rem 1.4rem;
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  font-size: 0.9rem;
+  text-decoration: none;
+  border: 1px solid transparent;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.guest-prompt__btn--primary { background: var(--accent); color: #fff; }
+.guest-prompt__btn--primary:hover { filter: brightness(1.08); }
+.guest-prompt__btn--ghost { background: transparent; color: var(--text); border-color: var(--border); }
+.guest-prompt__btn--ghost:hover { border-color: var(--accent); color: var(--accent); }

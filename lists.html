@@ -42,6 +42,17 @@
   </header>
 
   <main class="container">
+    <div class="guest-prompt" data-auth="guest">
+      <svg class="guest-prompt__icon" xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+      </svg>
+      <h2 class="guest-prompt__title">Sign in to build your lists</h2>
+      <p class="guest-prompt__text">Log in or create an account to create custom game lists and access them anywhere.</p>
+      <div class="guest-prompt__actions">
+        <a href="auth.html" class="guest-prompt__btn guest-prompt__btn--primary">Log in</a>
+        <a href="auth.html?tab=signup" class="guest-prompt__btn guest-prompt__btn--ghost">Sign up</a>
+      </div>
+    </div>
     <h1 class="played-header__title">My Lists</h1>
     <div id="lists-container"></div>
     <div id="lists-status"></div>
