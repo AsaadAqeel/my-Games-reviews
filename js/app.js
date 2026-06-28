@@ -342,7 +342,8 @@ function createFavStar(gameId, snapshot, onToggle) {
       console.error(result.error);
       return;
     }
-    syncState.favorites.toggle(Number(gameId));
+    if (result.added) syncState.favorites.add(Number(gameId));
+    else syncState.favorites.delete(Number(gameId));
     btn.setAttribute("aria-pressed", String(result.added));
     btn.setAttribute("aria-label", result.added ? "Remove from favorites" : "Add to favorites");
     if (onToggle) onToggle(result.added);
@@ -1352,7 +1353,8 @@ async function initGameDetail() {
       console.error(result.error);
       return;
     }
-    syncState.played.toggle(Number(gameId));
+    if (result.added) syncState.played.add(Number(gameId));
+    else syncState.played.delete(Number(gameId));
     updatePlayedBtn();
   });
 
