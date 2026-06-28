@@ -148,6 +148,24 @@ function isPlayedCached(gameId) {
   return syncState.played.has(Number(gameId));
 }
 
+// ===================== RAWG GAME LOOKUP =====================
+
+const gameDetailCache = new Map();
+
+async function fetchGameDetails(gameIds) {
+  const missing = gameIds.filter(id => !gameDetailCache.has(Number(id)));
+  if (missing.length > 0) {
+    const results = await Promise.allSettled(
+      missing.map(id => getGameDetail(id).then(g => { gameDetailCache.set(Number(id), g); }))
+    );
+  }
+  const out = {};
+  for (const id of gameIds) {
+    out[id] = gameDetailCache.get(Number(id)) || null;
+  }
+  return out;
+}
+
 // ===================== CLEAR USER UI =====================
 
 /**
@@ -1811,12 +1829,8 @@ async function initPlayedPage() {
   let currentSort = "recent";
 
   async function render() {
-    const { data: games } = await fetchTable("played_games");
-    let list = games || [];
-
-    if (currentSort === "name") {
-      list = [...list].sort((a, b) => (a.game_name || "").localeCompare(b.game_name || ""));
-    }
+    const { data: played } = await fetchTable("played_games");
+    let list = played || [];
 
     gridEl.innerHTML = "";
 
@@ -1825,29 +1839,34 @@ async function initPlayedPage() {
       return;
     }
 
-    for (const game of list) {
+    const gameIds = list.map(p => p.game_id);
+    const details = await fetchGameDetails(gameIds);
+
+    if (currentSort === "name") {
+      list = [...list].sort((a, b) => {
+        const nameA = (details[a.game_id] || {}).name || "";
+        const nameB = (details[b.game_id] || {}).name || "";
+        return nameA.localeCompare(nameB);
+      });
+    }
+
+    for (const played of list) {
+      const g = details[played.game_id] || {};
       const card = document.createElement("div");
       card.className = "game-card";
 
       const link = document.createElement("a");
-      link.href = "game.html?id=" + game.game_id;
-      link.setAttribute("aria-label", "View details for " + (game.game_name || "Game"));
+      link.href = "game.html?id=" + played.game_id;
+      link.setAttribute("aria-label", "View details for " + (g.name || "Game"));
 
       const img = document.createElement("img");
       img.className = "game-card__image";
-      img.src = game.game_image || "";
-      img.alt = game.game_name || "Game";
+      img.src = g.background_image || "";
+      img.alt = g.name || "Game";
       img.loading = "lazy";
-      img.onerror = function() {
-        this.classList.add("img-error");
-        this.style.display = "none";
-      };
-      img.onload = function() {
-        this.classList.add("img-loaded");
-      };
-      if (img.complete && img.naturalWidth > 0) {
-        img.classList.add("img-loaded");
-      }
+      img.onerror = function() { this.classList.add("img-error"); this.style.display = "none"; };
+      img.onload = function() { this.classList.add("img-loaded"); };
+      if (img.complete && img.naturalWidth > 0) img.classList.add("img-loaded");
       link.appendChild(img);
 
       const body = document.createElement("div");
@@ -1855,25 +1874,22 @@ async function initPlayedPage() {
 
       const title = document.createElement("div");
       title.className = "game-card__title";
-      title.textContent = game.game_name || "Game";
+      title.textContent = g.name || "Game";
       body.appendChild(title);
 
       const info = document.createElement("div");
       info.className = "game-card__genres";
-      if (game.game_released) {
-        info.textContent = "Released: " + game.game_released;
-      }
+      if (g.released) info.textContent = "Released: " + g.released;
       body.appendChild(info);
 
       const scores = document.createElement("div");
       scores.className = "game-card__scores";
-
       const rawgScore = document.createElement("span");
       rawgScore.className = "game-card__rawg-score";
-      rawgScore.textContent = "RAWG: " + (game.game_rating != null ? Number(game.game_rating).toFixed(1) : "N/A");
+      rawgScore.textContent = "RAWG: " + (g.rating != null ? g.rating.toFixed(1) : "N/A");
       scores.appendChild(rawgScore);
-
       body.appendChild(scores);
+
       link.appendChild(body);
       card.appendChild(link);
 
@@ -1881,27 +1897,25 @@ async function initPlayedPage() {
       removeBtn.type = "button";
       removeBtn.className = "remove-btn";
       removeBtn.textContent = "Remove";
-      removeBtn.setAttribute("aria-label", "Remove " + (game.game_name || "Game") + " from played");
+      removeBtn.setAttribute("aria-label", "Remove " + (g.name || "Game") + " from played");
       removeBtn.addEventListener("click", async (e) => {
         e.preventDefault();
         e.stopPropagation();
         removeBtn.disabled = true;
         removeBtn.textContent = "Removing...";
-        await remove("played_games", { id: game.id });
+        await remove("played_games", { id: played.id });
         render();
       });
       card.appendChild(removeBtn);
 
       const favSnapshot = {
-        id: game.game_id,
-        name: game.game_name || "Game",
-        image: game.game_image || "",
-        rating: game.game_rating,
-        released: game.game_released,
-        genres: game.game_genres || [],
-        tags: game.game_tags || []
+        id: played.game_id,
+        name: g.name || "",
+        image: g.background_image || "",
+        rating: g.rating,
+        released: g.released
       };
-      card.appendChild(createFavStar(game.game_id, favSnapshot, () => render()));
+      card.appendChild(createFavStar(played.game_id, favSnapshot, () => render()));
 
       gridEl.appendChild(card);
     }
@@ -1938,29 +1952,26 @@ async function initFavoritesPage() {
       return;
     }
 
-    for (const game of favorites) {
+    const gameIds = favorites.map(f => f.game_id);
+    const details = await fetchGameDetails(gameIds);
+
+    for (const fav of favorites) {
+      const g = details[fav.game_id] || {};
       const card = document.createElement("div");
       card.className = "game-card";
 
       const link = document.createElement("a");
-      link.href = "game.html?id=" + game.game_id;
-      link.setAttribute("aria-label", "View details for " + (game.game_name || "Game"));
+      link.href = "game.html?id=" + fav.game_id;
+      link.setAttribute("aria-label", "View details for " + (g.name || "Game"));
 
       const img = document.createElement("img");
       img.className = "game-card__image";
-      img.src = game.game_image || "";
-      img.alt = game.game_name || "Game";
+      img.src = g.background_image || "";
+      img.alt = g.name || "Game";
       img.loading = "lazy";
-      img.onerror = function() {
-        this.classList.add("img-error");
-        this.style.display = "none";
-      };
-      img.onload = function() {
-        this.classList.add("img-loaded");
-      };
-      if (img.complete && img.naturalWidth > 0) {
-        img.classList.add("img-loaded");
-      }
+      img.onerror = function() { this.classList.add("img-error"); this.style.display = "none"; };
+      img.onload = function() { this.classList.add("img-loaded"); };
+      if (img.complete && img.naturalWidth > 0) img.classList.add("img-loaded");
       link.appendChild(img);
 
       const body = document.createElement("div");
@@ -1968,38 +1979,33 @@ async function initFavoritesPage() {
 
       const title = document.createElement("div");
       title.className = "game-card__title";
-      title.textContent = game.game_name || "Game";
+      title.textContent = g.name || "Game";
       body.appendChild(title);
 
       const info = document.createElement("div");
       info.className = "game-card__genres";
-      if (game.game_released) {
-        info.textContent = "Released: " + game.game_released;
-      }
+      if (g.released) info.textContent = "Released: " + g.released;
       body.appendChild(info);
 
       const scores = document.createElement("div");
       scores.className = "game-card__scores";
-
       const rawgScore = document.createElement("span");
       rawgScore.className = "game-card__rawg-score";
-      rawgScore.textContent = "RAWG: " + (game.game_rating != null ? Number(game.game_rating).toFixed(1) : "N/A");
+      rawgScore.textContent = "RAWG: " + (g.rating != null ? g.rating.toFixed(1) : "N/A");
       scores.appendChild(rawgScore);
-
       body.appendChild(scores);
+
       link.appendChild(body);
       card.appendChild(link);
 
       const favSnapshot = {
-        id: game.game_id,
-        name: game.game_name || "Game",
-        image: game.game_image || "",
-        rating: game.game_rating,
-        released: game.game_released,
-        genres: game.game_genres || [],
-        tags: game.game_tags || []
+        id: fav.game_id,
+        name: g.name || "",
+        image: g.background_image || "",
+        rating: g.rating,
+        released: g.released
       };
-      card.appendChild(createFavStar(game.game_id, favSnapshot, () => render()));
+      card.appendChild(createFavStar(fav.game_id, favSnapshot, () => render()));
 
       gridEl.appendChild(card);
     }
@@ -2077,6 +2083,10 @@ async function initListsPage() {
       const { data: entries } = await fetchListGames(list.id);
       const games = entries || [];
 
+      // Fetch RAWG details for all games in this list
+      const gameIds = games.map(g => g.game_id);
+      const details = gameIds.length > 0 ? await fetchGameDetails(gameIds) : {};
+
       const card = document.createElement("div");
       card.className = "list-card";
 
@@ -2149,20 +2159,21 @@ async function initListsPage() {
           emptyMsg.textContent = "This list is empty. Add games from their detail page!";
           gamesContainer.appendChild(emptyMsg);
         } else {
-          for (const game of games) {
+          for (const entry of games) {
+            const g = details[entry.game_id] || {};
             const gameRow = document.createElement("div");
             gameRow.className = "list-card__game";
 
             const gameLink = document.createElement("a");
-            gameLink.href = "game.html?id=" + game.game_id;
+            gameLink.href = "game.html?id=" + entry.game_id;
             gameLink.className = "list-card__game-link";
-            gameLink.setAttribute("aria-label", "View " + (game.game_name || "Game"));
+            gameLink.setAttribute("aria-label", "View " + (g.name || "Game"));
 
-            if (game.game_image) {
+            if (g.background_image) {
               const thumb = document.createElement("img");
               thumb.className = "list-card__game-thumb";
-              thumb.src = game.game_image;
-              thumb.alt = game.game_name || "Game";
+              thumb.src = g.background_image;
+              thumb.alt = g.name || "Game";
               thumb.loading = "lazy";
               thumb.onerror = function() { this.style.display = "none"; };
               gameLink.appendChild(thumb);
@@ -2173,13 +2184,13 @@ async function initListsPage() {
 
             const gameName = document.createElement("span");
             gameName.className = "list-card__game-name";
-            gameName.textContent = game.game_name || "Game";
+            gameName.textContent = g.name || "Game";
             gameInfo.appendChild(gameName);
 
-            if (game.game_released) {
+            if (g.released) {
               const gameDate = document.createElement("span");
               gameDate.className = "list-card__game-date";
-              gameDate.textContent = game.game_released;
+              gameDate.textContent = g.released;
               gameInfo.appendChild(gameDate);
             }
 
@@ -2190,13 +2201,13 @@ async function initListsPage() {
             removeBtn.type = "button";
             removeBtn.className = "remove-btn";
             removeBtn.textContent = "Remove";
-            removeBtn.setAttribute("aria-label", "Remove " + (game.game_name || "Game") + " from " + list.name);
+            removeBtn.setAttribute("aria-label", "Remove " + (g.name || "Game") + " from " + list.name);
             removeBtn.addEventListener("click", async (e) => {
               e.preventDefault();
               e.stopPropagation();
               removeBtn.disabled = true;
               removeBtn.textContent = "Removing...";
-              await removeGameFromList(list.id, game.game_id);
+              await removeGameFromList(list.id, entry.game_id);
               render();
             });
             gameRow.appendChild(removeBtn);
@@ -2236,7 +2247,11 @@ async function initMyReviewsPage() {
       return;
     }
 
+    const gameIds = allReviews.map(r => r.game_id);
+    const details = await fetchGameDetails(gameIds);
+
     for (const review of allReviews) {
+      const g = details[review.game_id] || {};
       const card = document.createElement("div");
       card.className = "review-card my-reviews-card";
 
@@ -2244,11 +2259,11 @@ async function initMyReviewsPage() {
       gameLink.href = "game.html?id=" + review.game_id;
       gameLink.className = "my-reviews-card__game-link";
 
-      if (review.game_image) {
+      if (g.background_image) {
         const thumb = document.createElement("img");
         thumb.className = "my-reviews-card__thumb";
-        thumb.src = review.game_image;
-        thumb.alt = review.game_name || "Game";
+        thumb.src = g.background_image;
+        thumb.alt = g.name || "Game";
         thumb.loading = "lazy";
         thumb.onerror = function() { this.style.display = "none"; };
         gameLink.appendChild(thumb);
@@ -2256,7 +2271,7 @@ async function initMyReviewsPage() {
 
       const gameNameEl = document.createElement("span");
       gameNameEl.className = "my-reviews-card__game-name";
-      gameNameEl.textContent = review.game_name || "Game";
+      gameNameEl.textContent = g.name || "Game";
       gameLink.appendChild(gameNameEl);
 
       card.appendChild(gameLink);

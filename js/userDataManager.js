@@ -188,15 +188,7 @@ export async function toggleFavorite(gameId, snapshot = {}) {
 
   const { error: insertError } = await supabase
     .from("favorites")
-    .insert({
-      game_id: gameId,
-      game_name: snapshot.name || null,
-      game_image: snapshot.image || null,
-      game_rating: snapshot.rating || null,
-      game_released: snapshot.released || null,
-      game_genres: snapshot.genres || [],
-      game_tags: snapshot.tags || []
-    });
+    .insert({ game_id: gameId });
 
   if (insertError) {
     console.error("toggleFavorite insert error:", insertError.message);
@@ -264,15 +256,7 @@ export async function togglePlayed(gameId, snapshot = {}) {
 
   const { error: insertError } = await supabase
     .from("played_games")
-    .insert({
-      game_id: gameId,
-      game_name: snapshot.name || null,
-      game_image: snapshot.image || null,
-      game_rating: snapshot.rating || null,
-      game_released: snapshot.released || null,
-      game_genres: snapshot.genres || [],
-      game_tags: snapshot.tags || []
-    });
+    .insert({ game_id: gameId });
 
   if (insertError) {
     console.error("togglePlayed insert error:", insertError.message);
@@ -297,11 +281,7 @@ export async function saveReview(gameId, reviewData) {
     rating: reviewData.rating,
     title: reviewData.title,
     body: reviewData.body,
-    name: reviewData.name || "Anonymous",
-    game_name: reviewData.gameName || "",
-    game_image: reviewData.gameImage || "",
-    game_genres: reviewData.genres || [],
-    game_tags: reviewData.tags || []
+    name: reviewData.name || "Anonymous"
   };
 
   const { data: existing } = await supabase
@@ -317,11 +297,7 @@ export async function saveReview(gameId, reviewData) {
         rating: payload.rating,
         title: payload.title,
         body: payload.body,
-        name: payload.name,
-        game_name: payload.game_name,
-        game_image: payload.game_image,
-        game_genres: payload.game_genres,
-        game_tags: payload.game_tags
+        name: payload.name
       })
       .eq("id", existing.id)
       .select()
@@ -469,11 +445,7 @@ export async function addGameToList(listId, snapshot) {
     .from("list_entries")
     .insert({
       list_id: listId,
-      game_id: snapshot.id,
-      game_name: snapshot.name || "",
-      game_image: snapshot.image || "",
-      game_rating: snapshot.rating || null,
-      game_released: snapshot.released || null
+      game_id: snapshot.id
     })
     .select()
     .single();
