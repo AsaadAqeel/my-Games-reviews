@@ -32,6 +32,10 @@
         <a href="favorites.html" class="main-nav__link">Favorites</a>
         <a href="lists.html" class="main-nav__link">Lists</a>
         <a href="my-reviews.html" class="main-nav__link">My Reviews</a>
+        <div id="auth-user-badge" class="auth-user-badge" style="display:none;">
+          <span class="auth-user-badge__email"></span>
+          <button type="button" class="auth-user-badge__signout" data-auth-signout>Sign Out</button>
+        </div>
         <a href="auth.html" class="main-nav__auth">Sign up</a>
       </nav>
     </div>
@@ -48,6 +52,7 @@
     </div>
   </footer>
 
+  <script type="module" src="js/auth-guard.js"></script>
   <script type="module" src="js/app.js"></script>
 </body>
 </html>

@@ -2113,3 +2113,118 @@ footer a:hover { color: var(--accent-hover); }
     grid-template-columns: repeat(auto-fill, minmax(clamp(150px, 42vw, 200px), 1fr));
   }
 }
+
+/* ===== Auth Guard - User Badge ===== */
+.auth-user-badge {
+  display: none;
+  align-items: center;
+  gap: 0.6rem;
+  margin-left: auto;
+}
+
+.auth-user-badge__email {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.auth-user-badge__signout {
+  padding: 0.35rem 0.7rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: transparent;
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: background var(--transition), color var(--transition), border-color var(--transition);
+}
+
+.auth-user-badge__signout:hover {
+  background: rgba(229, 9, 20, 0.1);
+  border-color: var(--accent-soft);
+  color: var(--accent-soft);
+}
+
+/* ===== Auth Guard - Sign-In Prompt Overlay ===== */
+#auth-signin-prompt {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+.signin-prompt__card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 2rem 2.5rem;
+  text-align: center;
+  max-width: 360px;
+  width: 90%;
+}
+
+.signin-prompt__text {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 1.5rem;
+}
+
+.signin-prompt__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.signin-prompt__btn {
+  display: block;
+  width: 100%;
+  padding: 0.7rem 1.2rem;
+  border-radius: var(--radius-sm);
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  text-align: center;
+  transition: background var(--transition), transform var(--transition);
+}
+
+.signin-prompt__btn--primary {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+}
+
+.signin-prompt__btn--primary:hover {
+  background: var(--accent-hover);
+  transform: translateY(-1px);
+  color: #fff;
+}
+
+.signin-prompt__btn--dismiss {
+  background: transparent;
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+}
+
+.signin-prompt__btn--dismiss:hover {
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text);
+}
+
+@media (max-width: 640px) {
+  .auth-user-badge__email {
+    display: none;
+  }
+}
