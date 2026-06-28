@@ -2417,9 +2417,11 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   // Pre-fetch user data for star buttons on catalog/homepage
   // Only if a session exists — never sync for guests
+  // Run in background so homepage renders immediately (prevents boot timeout)
   if (isCatalogPage() || isHomePage()) {
-    const user = await getCurrentUser();
-    if (user) await ensureSync();
+    getCurrentUser().then(user => {
+      if (user) ensureSync();
+    });
   }
 
   if (path.endsWith("played.html")) {
