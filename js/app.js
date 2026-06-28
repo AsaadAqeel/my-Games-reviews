@@ -132,10 +132,24 @@ let syncReady = null;
 async function ensureSync() {
   if (syncReady) return syncReady;
   syncReady = (async () => {
-    const user = await getCurrentUser();
-    if (!user) return syncState;
-    syncState = await syncAll();
-    return syncState;
+    try {
+      const user = await getCurrentUser();
+      if (!user) {
+        console.warn("[sync] No authenticated user — skipping sync.");
+        return syncState;
+      }
+      console.log("[sync] Authenticated as:", user.id, user.email);
+      syncState = await syncAll();
+      console.log("[sync] Sync complete:", {
+        favorites: syncState.favorites.size,
+        played: syncState.played.size,
+        lists: syncState.lists.length
+      });
+      return syncState;
+    } catch (err) {
+      console.error("[sync] ensureSync failed:", err);
+      return syncState;
+    }
   })();
   return syncReady;
 }

@@ -522,6 +522,7 @@ export async function isGameInList(listId, gameId) {
 export async function syncAll() {
   const user = await requireAuth();
   if (!user) {
+    console.warn("[syncAll] No user session — returning empty state.");
     return {
       favorites: new Set(),
       played: new Set(),
@@ -533,42 +534,72 @@ export async function syncAll() {
     };
   }
 
-  const [favResult, playedResult, reviewsResult, listsResult] = await Promise.all([
-    fetchTable("favorites"),
-    fetchTable("played_games"),
-    fetchTable("reviews", { order: "created_at", ascending: false }),
-    fetchTable("lists")
-  ]);
+  console.log("[syncAll] Fetching data for user:", user.id);
 
-  const favoritesData = favResult.data || [];
-  const playedData = playedResult.data || [];
-  const reviewsData = reviewsResult.data || [];
-  const favoriteIds = new Set(favoritesData.map(r => r.game_id));
-  const playedIds = new Set(playedData.map(r => r.game_id));
+  try {
+    const [favResult, playedResult, reviewsResult, listsResult] = await Promise.all([
+      fetchTable("favorites"),
+      fetchTable("played_games"),
+      fetchTable("reviews", { order: "created_at", ascending: false }),
+      fetchTable("lists")
+    ]);
 
-  const lists = listsResult.data || [];
+    if (favResult.error) console.error("[syncAll] favorites fetch error:", favResult.error);
+    if (playedResult.error) console.error("[syncAll] played_games fetch error:", playedResult.error);
+    if (reviewsResult.error) console.error("[syncAll] reviews fetch error:", reviewsResult.error);
+    if (listsResult.error) console.error("[syncAll] lists fetch error:", listsResult.error);
 
-  // Pre-fetch list entries for all lists
-  const listEntriesMap = {};
-  if (lists.length > 0) {
-    const entryPromises = lists.map(list =>
-      fetchTable("list_entries", { filters: { list_id: list.id }, select: "game_id" })
-    );
-    const entryResults = await Promise.all(entryPromises);
-    lists.forEach((list, i) => {
-      listEntriesMap[list.id] = new Set(entryResults[i].data.map(r => r.game_id));
+    const favoritesData = favResult.data || [];
+    const playedData = playedResult.data || [];
+    const reviewsData = reviewsResult.data || [];
+    const favoriteIds = new Set(favoritesData.map(r => r.game_id));
+    const playedIds = new Set(playedData.map(r => r.game_id));
+
+    console.log("[syncAll] Raw counts:", {
+      favorites: favoritesData.length,
+      played: playedData.length,
+      reviews: reviewsData.length,
+      lists: (listsResult.data || []).length
     });
-  }
 
-  return {
-    favorites: favoriteIds,
-    played: playedIds,
-    favoritesData,
-    playedData,
-    reviewsData,
-    lists,
-    listEntries: listEntriesMap
-  };
+    const lists = listsResult.data || [];
+
+    // Pre-fetch list entries for all lists
+    const listEntriesMap = {};
+    if (lists.length > 0) {
+      const entryPromises = lists.map(list =>
+        fetchTable("list_entries", { filters: { list_id: list.id }, select: "game_id" })
+      );
+      const entryResults = await Promise.all(entryPromises);
+      lists.forEach((list, i) => {
+        if (entryResults[i].error) {
+          console.error("[syncAll] list_entries fetch error for list", list.id + ":", entryResults[i].error);
+        }
+        listEntriesMap[list.id] = new Set((entryResults[i].data || []).map(r => r.game_id));
+      });
+    }
+
+    return {
+      favorites: favoriteIds,
+      played: playedIds,
+      favoritesData,
+      playedData,
+      reviewsData,
+      lists,
+      listEntries: listEntriesMap
+    };
+  } catch (err) {
+    console.error("[syncAll] Unhandled error during sync:", err);
+    return {
+      favorites: new Set(),
+      played: new Set(),
+      favoritesData: [],
+      playedData: [],
+      reviewsData: [],
+      lists: [],
+      listEntries: {}
+    };
+  }
 }
 
 // ===================== AVERAGES (Client-side from reviews) =====================
