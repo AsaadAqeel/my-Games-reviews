@@ -1385,17 +1385,16 @@ async function initGameDetail() {
     tags: (gameData.tags || []).map(t => ({ slug: t.slug, name: t.name }))
   };
   const favBtn = createFavStar(gameId, detailFavSnapshot);
+  favBtn.style.visibility = "hidden";
   actionsRow.appendChild(favBtn);
 
-  // Direct Supabase check: reconcile star state if ensureSync cache was wrong
+  // Direct Supabase check: resolve correct state BEFORE revealing
   isFavorite(gameId).then(isFav => {
-    const cached = favBtn.getAttribute("aria-pressed") === "true";
-    if (isFav !== cached) {
-      favBtn.setAttribute("aria-pressed", String(isFav));
-      favBtn.setAttribute("aria-label", isFav ? "Remove from favorites" : "Add to favorites");
-      if (isFav) syncState.favorites.add(Number(gameId));
-      else syncState.favorites.delete(Number(gameId));
-    }
+    favBtn.setAttribute("aria-pressed", String(isFav));
+    favBtn.setAttribute("aria-label", isFav ? "Remove from favorites" : "Add to favorites");
+    if (isFav) syncState.favorites.add(Number(gameId));
+    else syncState.favorites.delete(Number(gameId));
+    favBtn.style.visibility = "";
   });
 
   // "Add to List" dropdown
