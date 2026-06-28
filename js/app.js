@@ -9,7 +9,7 @@ import {
   fetchLists, createList, renameList, deleteList,
   fetchListGames, addGameToList, removeGameFromList,
   fetchTable, remove,
-  getCurrentUser, getProfileUsername
+  getCurrentUser
 } from "./userDataManager.js";
 
 // ===================== UTILITIES =====================
@@ -1638,25 +1638,6 @@ function renderReviewsSection(container, gameId) {
   bodyGroup.appendChild(bodyError);
   form.appendChild(bodyGroup);
 
-  // Name
-  const nameGroup = document.createElement("div");
-  nameGroup.className = "form-group";
-  const nameLabel = document.createElement("label");
-  nameLabel.setAttribute("for", "review-name");
-  nameLabel.textContent = "Your Name (optional)";
-  nameGroup.appendChild(nameLabel);
-  const nameInput = document.createElement("input");
-  nameInput.type = "text";
-  nameInput.id = "review-name";
-  nameInput.maxLength = 50;
-  nameInput.placeholder = "Anonymous";
-  nameGroup.appendChild(nameInput);
-  form.appendChild(nameGroup);
-
-  getProfileUsername().then(username => {
-    if (username) nameInput.value = username;
-  });
-
   // Submit
   const submitBtn = document.createElement("button");
   submitBtn.type = "button";
@@ -1670,7 +1651,6 @@ function renderReviewsSection(container, gameId) {
     const rating = widget.getValue();
     const titleVal = titleInput.value.trim();
     const bodyVal = bodyInput.value.trim();
-    const nameVal = nameInput.value.trim();
 
     let hasError = false;
 
@@ -1706,8 +1686,7 @@ function renderReviewsSection(container, gameId) {
     const { data, error } = await saveReview(gameId, {
       rating,
       title: titleVal,
-      body: bodyVal,
-      name: nameVal || "Anonymous"
+      body: bodyVal
     });
 
     submitBtn.disabled = false;
@@ -1725,7 +1704,6 @@ function renderReviewsSection(container, gameId) {
     widget.setValue(0);
     titleInput.value = "";
     bodyInput.value = "";
-    nameInput.value = "";
 
     // Show success
     successMsg.textContent = "Review saved successfully!";

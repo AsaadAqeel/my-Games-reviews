@@ -296,8 +296,7 @@ export async function saveReview(gameId, reviewData) {
     game_id: gameId,
     rating: reviewData.rating,
     title: reviewData.title,
-    body: reviewData.body,
-    name: reviewData.name || "Anonymous"
+    body: reviewData.body
   };
 
   const { data: existing } = await supabase
@@ -312,8 +311,7 @@ export async function saveReview(gameId, reviewData) {
       .update({
         rating: payload.rating,
         title: payload.title,
-        body: payload.body,
-        name: payload.name
+        body: payload.body
       })
       .eq("id", existing.id)
       .select()
