@@ -9,7 +9,7 @@ import {
   fetchLists, createList, renameList, deleteList,
   fetchListGames, addGameToList, removeGameFromList,
   fetchTable, remove,
-  getCurrentUser
+  getCurrentUser, getProfileUsername
 } from "./userDataManager.js";
 
 // ===================== UTILITIES =====================
@@ -1652,6 +1652,10 @@ function renderReviewsSection(container, gameId) {
   nameInput.placeholder = "Anonymous";
   nameGroup.appendChild(nameInput);
   form.appendChild(nameGroup);
+
+  getProfileUsername().then(username => {
+    if (username) nameInput.value = username;
+  });
 
   // Submit
   const submitBtn = document.createElement("button");

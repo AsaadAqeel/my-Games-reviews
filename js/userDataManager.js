@@ -12,6 +12,22 @@ export async function getCurrentUser() {
   return requireAuth();
 }
 
+export async function getProfileUsername() {
+  const user = await requireAuth();
+  if (!user) return null;
+  try {
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("username")
+      .eq("id", user.id)
+      .maybeSingle();
+    if (error || !data?.username) return null;
+    return data.username;
+  } catch {
+    return null;
+  }
+}
+
 // ===================== EVENT BUS =====================
 
 const listeners = {};
