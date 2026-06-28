@@ -39,6 +39,7 @@ function applyAuthUI(user) {
       const dropdown = userBadge.querySelector(".profile-dropdown");
       if (dropdown) dropdown.classList.remove("show");
     }
+    console.log("[auth-guard] badge display:", userBadge.style.display, "user:", user?.email);
   }
 }
 
@@ -122,11 +123,13 @@ async function initAuthGuard() {
   // Profile dropdown toggle
   const triggerBtn = document.querySelector(".auth-user-badge__trigger");
   const dropdown = document.querySelector(".profile-dropdown");
+  console.log("[auth-guard] dropdown init:", { triggerBtn, dropdown });
   if (triggerBtn && dropdown) {
     triggerBtn.addEventListener("click", (e) => {
       e.stopPropagation();
       const isOpen = dropdown.classList.toggle("show");
       triggerBtn.setAttribute("aria-expanded", String(isOpen));
+      console.log("[auth-guard] dropdown toggled:", isOpen);
     });
 
     // Close dropdown when clicking outside
