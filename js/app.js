@@ -1,8 +1,16 @@
 import { searchGames, getGameDetail, getGameScreenshots, getGenres, getPlatforms } from "./rawg.js";
-import { getReviews, addReview, deleteReview, getAllUserReviews, getAverageRating, getReviewCount, getAllAverages, getPlayedGames, isPlayed, togglePlayed, removePlayed, getLists, createList, renameList, deleteList, addGameToList, removeGameFromList, isGameInList, getFavorites, isFavorite, toggleFavorite, removeFavorite } from "./storage.js";
 import { initRecommendations } from "./recommendations/recommendations.js";
 import { ensureAuth } from "./auth-guard.js";
-import { fetchUserFavorites } from "./supabase-storage.js";
+import {
+  syncAll, isFavorite, toggleFavorite,
+  isPlayed, togglePlayed,
+  saveReview, deleteReview as deleteReviewDb, fetchGameReviews, fetchAllUserReviews,
+  computeAverage, computeAllAverages,
+  fetchLists, createList, renameList, deleteList,
+  fetchListGames, addGameToList, removeGameFromList,
+  fetchTable, remove,
+  getCurrentUser
+} from "./userDataManager.js";
 
 // ===================== UTILITIES =====================
 
@@ -108,6 +116,36 @@ function isRelevantGame(gameName, query) {
 function filterSearchResults(results, query) {
   if (!query || !query.trim()) return results;
   return results.filter(game => isRelevantGame(game.name, query));
+}
+
+// ===================== SYNC STATE CACHE =====================
+
+let syncState = {
+  favorites: new Set(),
+  played: new Set(),
+  lists: [],
+  listEntries: {}
+};
+
+let syncReady = null;
+
+async function ensureSync() {
+  if (syncReady) return syncReady;
+  syncReady = (async () => {
+    const user = await getCurrentUser();
+    if (!user) return syncState;
+    syncState = await syncAll();
+    return syncState;
+  })();
+  return syncReady;
+}
+
+function isFavCached(gameId) {
+  return syncState.favorites.has(Number(gameId));
+}
+
+function isPlayedCached(gameId) {
+  return syncState.played.has(Number(gameId));
 }
 
 // ===================== STAR WIDGET =====================
@@ -221,7 +259,7 @@ function createFavStar(gameId, snapshot, onToggle) {
   const btn = document.createElement("button");
   btn.type = "button";
   btn.className = "fav-star";
-  const fav = isFavorite(gameId);
+  const fav = isFavCached(gameId);
   btn.innerHTML = STAR_SVG;
   btn.setAttribute("aria-pressed", String(fav));
   btn.setAttribute("aria-label", fav ? "Remove from favorites" : "Add to favorites");
@@ -231,10 +269,17 @@ function createFavStar(gameId, snapshot, onToggle) {
     e.stopPropagation();
     const user = await ensureAuth();
     if (!user) return;
-    const isNowFav = toggleFavorite(gameId, snapshot);
-    btn.setAttribute("aria-pressed", String(isNowFav));
-    btn.setAttribute("aria-label", isNowFav ? "Remove from favorites" : "Add to favorites");
-    if (onToggle) onToggle(isNowFav);
+    btn.disabled = true;
+    const result = await toggleFavorite(gameId, snapshot);
+    btn.disabled = false;
+    if (result.error) {
+      console.error(result.error);
+      return;
+    }
+    syncState.favorites.toggle(Number(gameId));
+    btn.setAttribute("aria-pressed", String(result.added));
+    btn.setAttribute("aria-label", result.added ? "Remove from favorites" : "Add to favorites");
+    if (onToggle) onToggle(result.added);
   });
 
   return btn;
@@ -839,7 +884,10 @@ async function initCatalog() {
 
   async function loadGames(page = 1) {
     currentPage = page;
-    userAverages = getAllAverages();
+
+    // Fetch all reviews from Supabase and compute averages
+    const { data: allReviews } = await fetchAllUserReviews();
+    userAverages = computeAllAverages(allReviews || []);
 
     if (activeSearchController) {
       activeSearchController.abort();
@@ -1058,6 +1106,8 @@ async function initGameDetail() {
     return;
   }
 
+  await ensureSync();
+
   const loadingEl = document.getElementById("game-detail-loading");
   const errorEl = document.getElementById("game-detail-error");
   const detailEl = document.getElementById("game-detail");
@@ -1182,16 +1232,22 @@ async function initGameDetail() {
   const userValue = document.createElement("div");
   userValue.className = "score-box__value user";
   userValue.id = "user-score-value";
-  const avg = getAverageRating(gameId);
-  const count = getReviewCount(gameId);
-  userValue.textContent = avg != null ? avg.toFixed(1) : "N/A";
+  userValue.textContent = "Loading...";
   userBox.appendChild(userValue);
   const userCount = document.createElement("div");
   userCount.className = "score-box__count";
   userCount.id = "user-score-count";
-  userCount.textContent = count + " on-site review" + (count !== 1 ? "s" : "");
+  userCount.textContent = "";
   userBox.appendChild(userCount);
   scoresContainer.appendChild(userBox);
+
+  // Fetch user reviews from Supabase
+  (async () => {
+    const { data: reviews } = await fetchGameReviews(gameId);
+    const { average, count } = computeAverage(reviews || []);
+    userValue.textContent = average != null ? average.toFixed(1) : "N/A";
+    userCount.textContent = count + " on-site review" + (count !== 1 ? "s" : "");
+  })();
 
   detailEl.appendChild(scoresContainer);
 
@@ -1202,10 +1258,10 @@ async function initGameDetail() {
   const playedBtn = document.createElement("button");
   playedBtn.type = "button";
   playedBtn.className = "played-btn";
-  playedBtn.setAttribute("aria-pressed", String(isPlayed(gameId)));
+  playedBtn.setAttribute("aria-pressed", String(isPlayedCached(gameId)));
 
   function updatePlayedBtn() {
-    const played = isPlayed(gameId);
+    const played = isPlayedCached(gameId);
     playedBtn.textContent = played ? "Played" : "Play";
     playedBtn.classList.toggle("played-btn--active", played);
     playedBtn.setAttribute("aria-pressed", String(played));
@@ -1215,7 +1271,8 @@ async function initGameDetail() {
   playedBtn.addEventListener("click", async () => {
     const user = await ensureAuth();
     if (!user) return;
-    togglePlayed(gameId, {
+    playedBtn.disabled = true;
+    const result = await togglePlayed(gameId, {
       id: gameData.id,
       name: gameData.name,
       image: gameData.background_image || "",
@@ -1224,6 +1281,12 @@ async function initGameDetail() {
       genres: (gameData.genres || []).map(g => ({ slug: g.slug, name: g.name })),
       tags: (gameData.tags || []).map(t => ({ slug: t.slug, name: t.name }))
     });
+    playedBtn.disabled = false;
+    if (result.error) {
+      console.error(result.error);
+      return;
+    }
+    syncState.played.toggle(Number(gameId));
     updatePlayedBtn();
   });
 
@@ -1261,19 +1324,25 @@ async function initGameDetail() {
   listMenu.addEventListener("click", function(e) { e.stopPropagation(); });
   listMenu.addEventListener("mousedown", function(e) { e.stopPropagation(); });
 
-  function renderListMenu() {
-    // Clear and rebuild the list rows + create input
+  async function renderListMenu() {
     listMenu.innerHTML = "";
-    var lists = getLists();
+    const user = await getCurrentUser();
+    if (!user) return;
 
-    lists.forEach(function(list) {
+    const { data: lists } = await fetchLists();
+    const allLists = lists || [];
+
+    for (const list of allLists) {
+      const { data: entries } = await fetchListGames(list.id);
+      const gameIds = new Set((entries || []).map(e => e.game_id));
+
       var item = document.createElement("label");
       item.className = "list-menu__item";
       item.setAttribute("role", "menuitemcheckbox");
 
       var checkbox = document.createElement("input");
       checkbox.type = "checkbox";
-      checkbox.checked = isGameInList(list.id, gameId);
+      checkbox.checked = gameIds.has(Number(gameId));
       checkbox.setAttribute("aria-label", list.name);
 
       var nameSpan = document.createElement("span");
@@ -1282,7 +1351,7 @@ async function initGameDetail() {
       item.appendChild(checkbox);
       item.appendChild(nameSpan);
 
-      checkbox.addEventListener("change", function() {
+      checkbox.addEventListener("change", async function() {
         var snapshot = {
           id: gameData.id,
           name: gameData.name,
@@ -1290,15 +1359,17 @@ async function initGameDetail() {
           rating: gameData.rating,
           released: gameData.released
         };
+        checkbox.disabled = true;
         if (checkbox.checked) {
-          addGameToList(list.id, snapshot);
+          await addGameToList(list.id, snapshot);
         } else {
-          removeGameFromList(list.id, gameId);
+          await removeGameFromList(list.id, gameData.id);
         }
+        checkbox.disabled = false;
       });
 
       listMenu.appendChild(item);
-    });
+    }
 
     // Create new list input row
     var createRow = document.createElement("div");
@@ -1316,13 +1387,15 @@ async function initGameDetail() {
     createBtn.textContent = "+";
     createBtn.setAttribute("aria-label", "Create list");
 
-    function doCreate(e) {
+    async function doCreate(e) {
       if (e) e.stopPropagation();
       var name = createInput.value.trim();
       if (!name) return;
-      createList(name);
+      createBtn.disabled = true;
+      await createList(name);
+      createBtn.disabled = false;
       createInput.value = "";
-      renderListMenu();
+      await renderListMenu();
     }
 
     createBtn.addEventListener("click", doCreate);
@@ -1364,7 +1437,7 @@ async function initGameDetail() {
       closeListMenu();
     } else {
       listMenu.style.display = "block";
-      renderListMenu();
+      await renderListMenu();
       document.addEventListener("click", handleOutsideClick);
       document.addEventListener("keydown", handleEscapeKey);
     }
@@ -1431,6 +1504,12 @@ function renderReviewsSection(container, gameId) {
   const formTitle = document.createElement("h3");
   formTitle.textContent = "Write a Review";
   form.appendChild(formTitle);
+
+  // Success message container
+  const successMsg = document.createElement("div");
+  successMsg.className = "status-message status-message--success";
+  successMsg.style.display = "none";
+  form.appendChild(successMsg);
 
   // Star rating
   const ratingGroup = document.createElement("div");
@@ -1518,7 +1597,6 @@ function renderReviewsSection(container, gameId) {
 
     let hasError = false;
 
-    // Validate rating
     if (rating === 0) {
       ratingError.textContent = "Please select a star rating.";
       ratingError.classList.add("visible");
@@ -1527,7 +1605,6 @@ function renderReviewsSection(container, gameId) {
       ratingError.classList.remove("visible");
     }
 
-    // Validate title
     if (!titleVal) {
       titleError.textContent = "Please enter a review title.";
       titleError.classList.add("visible");
@@ -1536,7 +1613,6 @@ function renderReviewsSection(container, gameId) {
       titleError.classList.remove("visible");
     }
 
-    // Validate body
     if (bodyVal.length < 10) {
       bodyError.textContent = "Review must be at least 10 characters long.";
       bodyError.classList.add("visible");
@@ -1547,7 +1623,10 @@ function renderReviewsSection(container, gameId) {
 
     if (hasError) return;
 
-    addReview(gameId, {
+    submitBtn.disabled = true;
+    submitBtn.textContent = "Saving...";
+
+    const { data, error } = await saveReview(gameId, {
       rating,
       title: titleVal,
       body: bodyVal,
@@ -1558,11 +1637,28 @@ function renderReviewsSection(container, gameId) {
       tags: (gameData.tags || []).map(t => ({ slug: t.slug, name: t.name }))
     });
 
+    submitBtn.disabled = false;
+    submitBtn.textContent = "Submit Review";
+
+    if (error) {
+      successMsg.textContent = error;
+      successMsg.className = "status-message status-message--error";
+      successMsg.style.display = "block";
+      setTimeout(() => { successMsg.style.display = "none"; }, 4000);
+      return;
+    }
+
     // Reset form
     widget.setValue(0);
     titleInput.value = "";
     bodyInput.value = "";
     nameInput.value = "";
+
+    // Show success
+    successMsg.textContent = "Review saved successfully!";
+    successMsg.className = "status-message status-message--success";
+    successMsg.style.display = "block";
+    setTimeout(() => { successMsg.style.display = "none"; }, 3000);
 
     // Re-render
     renderReviewsSection(container, gameId);
@@ -1570,73 +1666,77 @@ function renderReviewsSection(container, gameId) {
 
   container.appendChild(form);
 
-  // Reviews list
-  const reviews = getReviews(gameId);
+  // Reviews list (from Supabase)
+  (async () => {
+    const { data: reviews } = await fetchGameReviews(gameId);
+    const allReviews = reviews || [];
 
-  if (reviews.length === 0) {
-    const emptyMsg = document.createElement("div");
-    emptyMsg.className = "status-message";
-    emptyMsg.textContent = "No reviews yet \u2014 be the first!";
-    container.appendChild(emptyMsg);
-  } else {
-    const listTitle = document.createElement("h3");
-    listTitle.textContent = reviews.length + " Review" + (reviews.length !== 1 ? "s" : "");
-    listTitle.style.marginBottom = "0.75rem";
-    container.appendChild(listTitle);
+    if (allReviews.length === 0) {
+      const emptyMsg = document.createElement("div");
+      emptyMsg.className = "status-message";
+      emptyMsg.textContent = "No reviews yet \u2014 be the first!";
+      container.appendChild(emptyMsg);
+    } else {
+      const listTitle = document.createElement("h3");
+      listTitle.textContent = allReviews.length + " Review" + (allReviews.length !== 1 ? "s" : "");
+      listTitle.style.marginBottom = "0.75rem";
+      container.appendChild(listTitle);
 
-    for (const review of reviews) {
-      const card = document.createElement("div");
-      card.className = "review-card";
+      // Update user score display
+      const { average, count } = computeAverage(allReviews);
+      const scoreVal = document.getElementById("user-score-value");
+      const scoreCnt = document.getElementById("user-score-count");
+      if (scoreVal) scoreVal.textContent = average != null ? average.toFixed(1) : "N/A";
+      if (scoreCnt) scoreCnt.textContent = count + " on-site review" + (count !== 1 ? "s" : "");
 
-      const header = document.createElement("div");
-      header.className = "review-card__header";
+      for (const review of allReviews) {
+        const card = document.createElement("div");
+        card.className = "review-card";
 
-      const author = document.createElement("span");
-      author.className = "review-card__author";
-      author.textContent = review.name;
-      header.appendChild(author);
+        const header = document.createElement("div");
+        header.className = "review-card__header";
 
-      const date = document.createElement("span");
-      date.className = "review-card__date";
-      date.textContent = formatDate(review.date);
-      header.appendChild(date);
+        const author = document.createElement("span");
+        author.className = "review-card__author";
+        author.textContent = review.name;
+        header.appendChild(author);
 
-      card.appendChild(header);
+        const date = document.createElement("span");
+        date.className = "review-card__date";
+        date.textContent = formatDate(new Date(review.created_at).getTime());
+        header.appendChild(date);
 
-      const starsEl = renderStaticStars(review.rating);
-      card.appendChild(starsEl);
+        card.appendChild(header);
 
-      const reviewTitle = document.createElement("div");
-      reviewTitle.className = "review-card__title";
-      reviewTitle.textContent = review.title;
-      card.appendChild(reviewTitle);
+        const starsEl = renderStaticStars(review.rating);
+        card.appendChild(starsEl);
 
-      const body = document.createElement("div");
-      body.className = "review-card__body";
-      body.textContent = review.body;
-      card.appendChild(body);
+        const reviewTitle = document.createElement("div");
+        reviewTitle.className = "review-card__title";
+        reviewTitle.textContent = review.title;
+        card.appendChild(reviewTitle);
 
-      const deleteBtn = document.createElement("button");
-      deleteBtn.type = "button";
-      deleteBtn.className = "delete-review-btn";
-      deleteBtn.textContent = "Delete My Review";
-      deleteBtn.addEventListener("click", () => {
-        if (confirm("Delete this review?")) {
-          deleteReview(gameId, review.id);
-          renderReviewsSection(container, gameId);
-          const newAvg = getAverageRating(gameId);
-          const newCount = getReviewCount(gameId);
-          const scoreVal = document.getElementById("user-score-value");
-          const scoreCnt = document.getElementById("user-score-count");
-          if (scoreVal) scoreVal.textContent = newAvg != null ? newAvg.toFixed(1) : "N/A";
-          if (scoreCnt) scoreCnt.textContent = newCount + " on-site review" + (newCount !== 1 ? "s" : "");
-        }
-      });
-      card.appendChild(deleteBtn);
+        const body = document.createElement("div");
+        body.className = "review-card__body";
+        body.textContent = review.body;
+        card.appendChild(body);
 
-      container.appendChild(card);
+        const deleteBtn = document.createElement("button");
+        deleteBtn.type = "button";
+        deleteBtn.className = "delete-review-btn";
+        deleteBtn.textContent = "Delete My Review";
+        deleteBtn.addEventListener("click", async () => {
+          if (confirm("Delete this review?")) {
+            await deleteReviewDb(review.id);
+            renderReviewsSection(container, gameId);
+          }
+        });
+        card.appendChild(deleteBtn);
+
+        container.appendChild(card);
+      }
     }
-  }
+  })();
 }
 
 // ===================== PLAYED PAGE =====================
@@ -1648,32 +1748,33 @@ function initPlayedPage() {
 
   let currentSort = "recent";
 
-  function render() {
-    let games = getPlayedGames();
+  async function render() {
+    const { data: games } = await fetchTable("played_games");
+    let list = games || [];
 
     if (currentSort === "name") {
-      games = [...games].sort((a, b) => a.name.localeCompare(b.name));
+      list = [...list].sort((a, b) => (a.game_name || "").localeCompare(b.game_name || ""));
     }
 
     gridEl.innerHTML = "";
 
-    if (games.length === 0) {
+    if (list.length === 0) {
       showEmpty(gridEl, "You haven\u2019t marked any games as played yet.");
       return;
     }
 
-    for (const game of games) {
+    for (const game of list) {
       const card = document.createElement("div");
       card.className = "game-card";
 
       const link = document.createElement("a");
-      link.href = "game.html?id=" + game.id;
-      link.setAttribute("aria-label", "View details for " + game.name);
+      link.href = "game.html?id=" + game.game_id;
+      link.setAttribute("aria-label", "View details for " + (game.game_name || "Game"));
 
       const img = document.createElement("img");
       img.className = "game-card__image";
-      img.src = game.image || "";
-      img.alt = game.name;
+      img.src = game.game_image || "";
+      img.alt = game.game_name || "Game";
       img.loading = "lazy";
       img.onerror = function() {
         this.classList.add("img-error");
@@ -1692,13 +1793,13 @@ function initPlayedPage() {
 
       const title = document.createElement("div");
       title.className = "game-card__title";
-      title.textContent = game.name;
+      title.textContent = game.game_name || "Game";
       body.appendChild(title);
 
       const info = document.createElement("div");
       info.className = "game-card__genres";
-      if (game.released) {
-        info.textContent = "Released: " + game.released;
+      if (game.game_released) {
+        info.textContent = "Released: " + game.game_released;
       }
       body.appendChild(info);
 
@@ -1707,7 +1808,7 @@ function initPlayedPage() {
 
       const rawgScore = document.createElement("span");
       rawgScore.className = "game-card__rawg-score";
-      rawgScore.textContent = "RAWG: " + (game.rating != null ? game.rating.toFixed(1) : "N/A");
+      rawgScore.textContent = "RAWG: " + (game.game_rating != null ? Number(game.game_rating).toFixed(1) : "N/A");
       scores.appendChild(rawgScore);
 
       body.appendChild(scores);
@@ -1718,25 +1819,25 @@ function initPlayedPage() {
       removeBtn.type = "button";
       removeBtn.className = "remove-btn";
       removeBtn.textContent = "Remove";
-      removeBtn.setAttribute("aria-label", "Remove " + game.name + " from played");
-      removeBtn.addEventListener("click", (e) => {
+      removeBtn.setAttribute("aria-label", "Remove " + (game.game_name || "Game") + " from played");
+      removeBtn.addEventListener("click", async (e) => {
         e.preventDefault();
         e.stopPropagation();
-        removePlayed(game.id);
+        await remove("played_games", { id: game.id });
         render();
       });
       card.appendChild(removeBtn);
 
       const favSnapshot = {
-        id: game.id,
-        name: game.name,
-        image: game.image || "",
-        rating: game.rating,
-        released: game.released,
-        genres: game.genres || [],
-        tags: game.tags || []
+        id: game.game_id,
+        name: game.game_name || "Game",
+        image: game.game_image || "",
+        rating: game.game_rating,
+        released: game.game_released,
+        genres: game.game_genres || [],
+        tags: game.game_tags || []
       };
-      card.appendChild(createFavStar(game.id, favSnapshot));
+      card.appendChild(createFavStar(game.game_id, favSnapshot, () => render()));
 
       gridEl.appendChild(card);
     }
@@ -1759,7 +1860,7 @@ async function initFavoritesPage() {
   if (!user) return;
 
   async function render() {
-    const { favorites, error } = await fetchUserFavorites();
+    const { data: favorites, error } = await fetchTable("favorites");
     gridEl.innerHTML = "";
 
     if (error) {
@@ -1850,8 +1951,12 @@ function initListsPage() {
 
   let selectedListId = null;
 
-  function render() {
-    const lists = getLists();
+  async function render() {
+    const user = await getCurrentUser();
+    if (!user) return;
+
+    const { data: lists } = await fetchLists();
+    const allLists = lists || [];
     listsContainer.innerHTML = "";
 
     // Create New List button
@@ -1871,11 +1976,11 @@ function initListsPage() {
     createBtn.textContent = "+ Create New List";
 
     async function doCreate() {
-      const user = await ensureAuth();
-      if (!user) return;
       const name = createInput.value.trim();
       if (!name) return;
-      createList(name);
+      createBtn.disabled = true;
+      await createList(name);
+      createBtn.disabled = false;
       createInput.value = "";
       render();
     }
@@ -1889,7 +1994,7 @@ function initListsPage() {
     createRow.appendChild(createBtn);
     listsContainer.appendChild(createRow);
 
-    if (lists.length === 0) {
+    if (allLists.length === 0) {
       const emptyMsg = document.createElement("div");
       emptyMsg.className = "status-message";
       emptyMsg.textContent = "No lists yet. Create one above or from a game detail page!";
@@ -1897,7 +2002,11 @@ function initListsPage() {
       return;
     }
 
-    for (const list of lists) {
+    for (const list of allLists) {
+      // Fetch games for this list
+      const { data: entries } = await fetchListGames(list.id);
+      const games = entries || [];
+
       const card = document.createElement("div");
       card.className = "list-card";
 
@@ -1907,7 +2016,7 @@ function initListsPage() {
       const titleBtn = document.createElement("button");
       titleBtn.type = "button";
       titleBtn.className = "list-card__title";
-      titleBtn.textContent = list.name + " (" + list.games.length + ")";
+      titleBtn.textContent = list.name + " (" + games.length + ")";
       titleBtn.setAttribute("aria-expanded", selectedListId === list.id ? "true" : "false");
 
       const controls = document.createElement("div");
@@ -1919,11 +2028,11 @@ function initListsPage() {
       renameBtn.textContent = "Rename";
       renameBtn.setAttribute("aria-label", "Rename " + list.name);
 
-      renameBtn.addEventListener("click", (e) => {
+      renameBtn.addEventListener("click", async (e) => {
         e.stopPropagation();
         const newName = prompt("Rename list:", list.name);
         if (newName && newName.trim()) {
-          renameList(list.id, newName.trim());
+          await renameList(list.id, newName.trim());
           render();
         }
       });
@@ -1934,10 +2043,10 @@ function initListsPage() {
       deleteBtn.textContent = "Delete";
       deleteBtn.setAttribute("aria-label", "Delete " + list.name);
 
-      deleteBtn.addEventListener("click", (e) => {
+      deleteBtn.addEventListener("click", async (e) => {
         e.stopPropagation();
         if (confirm("Delete \"" + list.name + "\"? This cannot be undone.")) {
-          deleteList(list.id);
+          await deleteList(list.id);
           if (selectedListId === list.id) selectedListId = null;
           render();
         }
@@ -1960,26 +2069,26 @@ function initListsPage() {
         const gamesContainer = document.createElement("div");
         gamesContainer.className = "list-card__games";
 
-        if (list.games.length === 0) {
+        if (games.length === 0) {
           const emptyMsg = document.createElement("div");
           emptyMsg.className = "status-message";
           emptyMsg.textContent = "This list is empty. Add games from their detail page!";
           gamesContainer.appendChild(emptyMsg);
         } else {
-          for (const game of list.games) {
+          for (const game of games) {
             const gameRow = document.createElement("div");
             gameRow.className = "list-card__game";
 
             const gameLink = document.createElement("a");
-            gameLink.href = "game.html?id=" + game.id;
+            gameLink.href = "game.html?id=" + game.game_id;
             gameLink.className = "list-card__game-link";
-            gameLink.setAttribute("aria-label", "View " + game.name);
+            gameLink.setAttribute("aria-label", "View " + (game.game_name || "Game"));
 
-            if (game.image) {
+            if (game.game_image) {
               const thumb = document.createElement("img");
               thumb.className = "list-card__game-thumb";
-              thumb.src = game.image;
-              thumb.alt = game.name;
+              thumb.src = game.game_image;
+              thumb.alt = game.game_name || "Game";
               thumb.loading = "lazy";
               thumb.onerror = function() { this.style.display = "none"; };
               gameLink.appendChild(thumb);
@@ -1990,13 +2099,13 @@ function initListsPage() {
 
             const gameName = document.createElement("span");
             gameName.className = "list-card__game-name";
-            gameName.textContent = game.name;
+            gameName.textContent = game.game_name || "Game";
             gameInfo.appendChild(gameName);
 
-            if (game.released) {
+            if (game.game_released) {
               const gameDate = document.createElement("span");
               gameDate.className = "list-card__game-date";
-              gameDate.textContent = game.released;
+              gameDate.textContent = game.game_released;
               gameInfo.appendChild(gameDate);
             }
 
@@ -2007,11 +2116,11 @@ function initListsPage() {
             removeBtn.type = "button";
             removeBtn.className = "remove-btn";
             removeBtn.textContent = "Remove";
-            removeBtn.setAttribute("aria-label", "Remove " + game.name + " from " + list.name);
-            removeBtn.addEventListener("click", (e) => {
+            removeBtn.setAttribute("aria-label", "Remove " + (game.game_name || "Game") + " from " + list.name);
+            removeBtn.addEventListener("click", async (e) => {
               e.preventDefault();
               e.stopPropagation();
-              removeGameFromList(list.id, game.id);
+              await removeGameFromList(list.id, game.game_id);
               render();
             });
             gameRow.appendChild(removeBtn);
@@ -2032,14 +2141,18 @@ function initListsPage() {
 
 // ===================== MY REVIEWS PAGE =====================
 
-function initMyReviewsPage() {
+async function initMyReviewsPage() {
   const container = document.getElementById("my-reviews-list");
 
-  function render() {
-    const reviews = getAllUserReviews();
+  const user = await ensureAuth();
+  if (!user) return;
+
+  async function render() {
+    const { data: reviews } = await fetchAllUserReviews();
+    const allReviews = reviews || [];
     container.innerHTML = "";
 
-    if (reviews.length === 0) {
+    if (allReviews.length === 0) {
       const emptyMsg = document.createElement("div");
       emptyMsg.className = "status-message";
       emptyMsg.textContent = "You haven\u2019t written any reviews yet.";
@@ -2047,19 +2160,19 @@ function initMyReviewsPage() {
       return;
     }
 
-    for (const review of reviews) {
+    for (const review of allReviews) {
       const card = document.createElement("div");
       card.className = "review-card my-reviews-card";
 
       const gameLink = document.createElement("a");
-      gameLink.href = "game.html?id=" + review.gameId;
+      gameLink.href = "game.html?id=" + review.game_id;
       gameLink.className = "my-reviews-card__game-link";
 
-      if (review.gameImage) {
+      if (review.game_image) {
         const thumb = document.createElement("img");
         thumb.className = "my-reviews-card__thumb";
-        thumb.src = review.gameImage;
-        thumb.alt = review.gameName;
+        thumb.src = review.game_image;
+        thumb.alt = review.game_name || "Game";
         thumb.loading = "lazy";
         thumb.onerror = function() { this.style.display = "none"; };
         gameLink.appendChild(thumb);
@@ -2067,7 +2180,7 @@ function initMyReviewsPage() {
 
       const gameNameEl = document.createElement("span");
       gameNameEl.className = "my-reviews-card__game-name";
-      gameNameEl.textContent = review.gameName;
+      gameNameEl.textContent = review.game_name || "Game";
       gameLink.appendChild(gameNameEl);
 
       card.appendChild(gameLink);
@@ -2082,7 +2195,7 @@ function initMyReviewsPage() {
 
       const date = document.createElement("span");
       date.className = "review-card__date";
-      date.textContent = formatDate(review.date);
+      date.textContent = formatDate(new Date(review.created_at).getTime());
       header.appendChild(date);
 
       card.appendChild(header);
@@ -2104,9 +2217,9 @@ function initMyReviewsPage() {
       deleteBtn.type = "button";
       deleteBtn.className = "delete-review-btn";
       deleteBtn.textContent = "Delete My Review";
-      deleteBtn.addEventListener("click", () => {
+      deleteBtn.addEventListener("click", async () => {
         if (confirm("Delete this review?")) {
-          deleteReview(review.gameId, review.id);
+          await deleteReviewDb(review.id);
           render();
         }
       });
@@ -2213,11 +2326,16 @@ function initHeaderSearch() {
 
 // ===================== INIT =====================
 
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
   initHeaderNav();
   initHeaderSearch();
 
   const path = window.location.pathname;
+
+  // Pre-fetch user data for star buttons on catalog/homepage
+  if (isCatalogPage() || isHomePage()) {
+    await ensureSync();
+  }
 
   if (path.endsWith("played.html")) {
     initPlayedPage();

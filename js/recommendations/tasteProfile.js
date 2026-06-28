@@ -1,11 +1,18 @@
-// Depends on:
-//   localStorage key "favoriteGames" from js/storage.js (getAllFavorites)
-//   localStorage key "playedGames"   from js/storage.js (getAllPlayed)
-//   localStorage key "gameReviews"   from js/storage.js (getAllReviews)
-// Snapshot shape: { id, name, genres: [{slug,name}], tags: [{slug,name}], ... }
-// Review shape:   { rating, genres: [{slug,name}], tags: [{slug,name}], ... }
+// Taste profile builder — Supabase-backed
+//
+// Data sources (all from userDataManager.syncAll()):
+//   favoritesData  — full rows from the favorites table
+//   playedData     — full rows from the played_games table
+//   reviewsData    — full rows from the reviews table (ordered by created_at desc)
+//
+// Supabase column mapping:
+//   game_genres: JSONB array of { slug, name }
+//   game_tags:   JSONB array of { slug, name }
+//   rating:      integer 1-5 (reviews table)
 
-import { getAllFavorites, getAllPlayed, getAllReviews } from "../storage.js";
+import { on } from "../userDataManager.js";
+
+// ===================== HELPERS =====================
 
 function slugFrom(item) {
   if (!item) return null;
@@ -14,22 +21,21 @@ function slugFrom(item) {
   return null;
 }
 
+function extractSlugs(arr) {
+  if (!Array.isArray(arr)) return [];
+  const out = [];
+  for (const item of arr) {
+    const s = slugFrom(item);
+    if (s) out.push(s);
+  }
+  return out;
+}
+
 function collectGenresTags(gameObj) {
-  const genres = [];
-  const tags = [];
-  if (Array.isArray(gameObj.genres)) {
-    for (const g of gameObj.genres) {
-      const s = slugFrom(g);
-      if (s) genres.push(s);
-    }
-  }
-  if (Array.isArray(gameObj.tags)) {
-    for (const t of gameObj.tags) {
-      const s = slugFrom(t);
-      if (s) tags.push(s);
-    }
-  }
-  return { genres, tags };
+  return {
+    genres: extractSlugs(gameObj.game_genres || gameObj.genres),
+    tags: extractSlugs(gameObj.game_tags || gameObj.tags)
+  };
 }
 
 function addWeight(profile, genres, tags, weight) {
@@ -41,78 +47,129 @@ function addWeight(profile, genres, tags, weight) {
   }
 }
 
-export function buildTasteProfile() {
+// ===================== PROFILE BUILDER =====================
+
+let cachedProfile = null;
+let cachedLikedIds = null;
+
+/**
+ * Builds the taste profile from Supabase data.
+ *
+ * @param {object} data - { favoritesData, playedData, reviewsData } from syncAll()
+ * @returns {{ profile: {genres, tags}, likedGameIds: Set }}
+ */
+export function buildTasteProfile(data = {}) {
+  const favoritesData = data.favoritesData || [];
+  const playedData = data.playedData || [];
+  const reviewsData = data.reviewsData || [];
+
   const profile = { genres: {}, tags: {} };
   const likedGameIds = new Set();
-
-  const favorites = getAllFavorites();
-  const played = getAllPlayed();
-  const reviews = getAllReviews();
-
   const reviewedIds = new Set();
 
   // --- Reviews (most specific signal) ---
-  if (reviews && typeof reviews === "object") {
-    for (const gameIdStr of Object.keys(reviews)) {
-      const reviewList = reviews[gameIdStr];
-      if (!Array.isArray(reviewList) || reviewList.length === 0) continue;
-
-      const gameId = Number(gameIdStr);
-      likedGameIds.add(gameId);
-      reviewedIds.add(gameId);
-
-      // Use the latest review's rating
-      const latest = reviewList.reduce((a, b) => (b.date > a.date ? b : a));
-      const rating = latest.rating;
-
-      let weight = 0;
-      if (rating >= 4) weight = 3;
-      else if (rating === 3) weight = 1;
-      else weight = -2;
-
-      // Use genres/tags stored on the review object
-      const { genres, tags } = collectGenresTags(latest);
-      addWeight(profile, genres, tags, weight);
+  // Group by game_id, keep latest per game (reviewsData is ordered created_at desc)
+  const reviewsByGame = new Map();
+  for (const review of reviewsData) {
+    const gid = Number(review.game_id);
+    if (!reviewsByGame.has(gid)) {
+      reviewsByGame.set(gid, review);
     }
+  }
+
+  for (const [gameId, review] of reviewsByGame) {
+    likedGameIds.add(gameId);
+    reviewedIds.add(gameId);
+
+    const rating = review.rating;
+    let weight = 0;
+    if (rating >= 4) weight = 3;
+    else if (rating === 3) weight = 1;
+    else weight = -2;
+
+    const { genres, tags } = collectGenresTags(review);
+    addWeight(profile, genres, tags, weight);
   }
 
   // --- Favorites ---
-  if (Array.isArray(favorites)) {
-    for (const game of favorites) {
-      if (!game || game.id == null) continue;
-      const id = Number(game.id);
-      likedGameIds.add(id);
+  for (const game of favoritesData) {
+    const id = Number(game.game_id);
+    if (!id) continue;
+    likedGameIds.add(id);
 
-      // Skip if already processed via a positive review
-      if (reviewedIds.has(id)) {
-        const reviewList = reviews[String(id)];
-        if (Array.isArray(reviewList) && reviewList.length > 0) {
-          const latest = reviewList.reduce((a, b) => (b.date > a.date ? b : a));
-          if (latest.rating >= 3) continue; // already weighted through review
-        }
-      }
-
-      const { genres, tags } = collectGenresTags(game);
-      addWeight(profile, genres, tags, 3);
+    // Skip if already processed via a positive review
+    if (reviewedIds.has(id)) {
+      const review = reviewsByGame.get(id);
+      if (review && review.rating >= 3) continue;
     }
+
+    const { genres, tags } = collectGenresTags(game);
+    addWeight(profile, genres, tags, 3);
   }
 
   // --- Played-only (no review, not favorited) ---
-  if (Array.isArray(played)) {
-    for (const game of played) {
-      if (!game || game.id == null) continue;
-      const id = Number(game.id);
-      likedGameIds.add(id);
+  for (const game of playedData) {
+    const id = Number(game.game_id);
+    if (!id) continue;
+    likedGameIds.add(id);
 
-      // Skip if already favorited or reviewed
-      if (reviewedIds.has(id)) continue;
-      const isFav = Array.isArray(favorites) && favorites.some(f => f && Number(f.id) === id);
-      if (isFav) continue;
+    if (reviewedIds.has(id)) continue;
+    const isFav = favoritesData.some(f => Number(f.game_id) === id);
+    if (isFav) continue;
 
-      const { genres, tags } = collectGenresTags(game);
-      addWeight(profile, genres, tags, 1);
-    }
+    const { genres, tags } = collectGenresTags(game);
+    addWeight(profile, genres, tags, 1);
   }
 
+  cachedProfile = profile;
+  cachedLikedIds = likedGameIds;
+
   return { profile, likedGameIds };
+}
+
+/**
+ * Returns the last-built profile without re-computing.
+ * Useful if callers need a synchronous snapshot after the first async build.
+ */
+export function getCachedProfile() {
+  return {
+    profile: cachedProfile || { genres: {}, tags: {} },
+    likedGameIds: cachedLikedIds || new Set()
+  };
+}
+
+// ===================== REACTIVE LISTENER =====================
+
+let unsubscribe = null;
+let onChangeCallback = null;
+
+/**
+ * Subscribes to userDataManager "change" events so the profile
+ * auto-rebuilds whenever the user rates, favorites, or plays a game.
+ *
+ * @param {function} fn - Called with the new { profile, likedGameIds } after each rebuild.
+ * @param {function} fetchData - Async function that returns { favoritesData, playedData, reviewsData }.
+ * @returns {function} Unsubscribe function.
+ */
+export function watchTasteProfile(fn, fetchData) {
+  onChangeCallback = fn;
+
+  if (unsubscribe) unsubscribe();
+
+  unsubscribe = on("change", async (evt) => {
+    // Only react to changes on tables that affect the taste profile
+    const relevant = evt.table === "favorites" || evt.table === "played_games" || evt.table === "reviews";
+    if (!relevant) return;
+
+    if (!fetchData) return;
+    const data = await fetchData();
+    const result = buildTasteProfile(data);
+    if (onChangeCallback) onChangeCallback(result);
+  });
+
+  return () => {
+    if (unsubscribe) unsubscribe();
+    unsubscribe = null;
+    onChangeCallback = null;
+  };
 }

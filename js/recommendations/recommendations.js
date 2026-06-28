@@ -1,15 +1,14 @@
 // Depends on:
-//   localStorage key "favoriteGames" from js/storage.js
-//   localStorage key "playedGames"   from js/storage.js
-//   localStorage key "gameReviews"   from js/storage.js
-//   js/recommendations/tasteProfile.js  (buildTasteProfile)
+//   js/userDataManager.js            (syncAll for Supabase data)
+//   js/recommendations/tasteProfile.js  (buildTasteProfile, watchTasteProfile)
 //   js/recommendations/candidates.js    (getCandidateGames)
 //   js/recommendations/score.js         (rankRecommendations)
 //   js/recommendations/diversify.js     (diversify)
 //   renderCuratedCard from js/app.js    (existing card component)
 //   js/config.js                        (RAWG_API_KEY, RAWG_BASE_URL)
 
-import { buildTasteProfile } from "./tasteProfile.js";
+import { syncAll } from "../userDataManager.js";
+import { buildTasteProfile, watchTasteProfile } from "./tasteProfile.js";
 import { getCandidateGames } from "./candidates.js";
 import { rankRecommendations } from "./score.js";
 import { diversify } from "./diversify.js";
@@ -17,13 +16,12 @@ import { diversify } from "./diversify.js";
 const CACHE_KEY = "recommendationsCache";
 const CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
 
-function getStateHash() {
+function getDataHash(data) {
   try {
-    const fav = localStorage.getItem("favoriteGames") || "";
-    const played = localStorage.getItem("playedGames") || "";
-    const reviews = localStorage.getItem("gameReviews") || "";
     let hash = 0;
-    const str = fav + played + reviews;
+    const str = JSON.stringify(data.favoritesData || []) +
+                JSON.stringify(data.playedData || []) +
+                JSON.stringify(data.reviewsData || []);
     for (let i = 0; i < str.length; i++) {
       hash = ((hash << 5) - hash + str.charCodeAt(i)) | 0;
     }
@@ -33,25 +31,25 @@ function getStateHash() {
   }
 }
 
-function readCache() {
+function readCache(hash) {
   try {
     const raw = localStorage.getItem(CACHE_KEY);
     if (!raw) return null;
     const cached = JSON.parse(raw);
     if (!cached || !cached.timestamp) return null;
     if (Date.now() - cached.timestamp > CACHE_TTL) return null;
-    if (cached.hash !== getStateHash()) return null;
+    if (cached.hash !== hash) return null;
     return cached.data;
   } catch {
     return null;
   }
 }
 
-function writeCache(data) {
+function writeCache(data, hash) {
   try {
     localStorage.setItem(CACHE_KEY, JSON.stringify({
       timestamp: Date.now(),
-      hash: getStateHash(),
+      hash,
       data
     }));
   } catch {
@@ -96,7 +94,7 @@ function setEmpty(container, isColdStart) {
   container.appendChild(msg);
 }
 
-export async function initRecommendations(renderCardFn) {
+async function generateRecommendations(renderCardFn) {
   const section = document.getElementById("recommendations-section");
   if (!section) return;
 
@@ -106,17 +104,30 @@ export async function initRecommendations(renderCardFn) {
 
   if (!grid) return;
 
-  // Check cache
-  const cached = readCache();
-  if (cached) {
-    renderResults(grid, cached, heading, refreshBtn, renderCardFn);
-    return;
-  }
-
   setLoading(grid);
 
-  const { profile, likedGameIds } = buildTasteProfile();
+  const data = await syncAll();
+  const { profile, likedGameIds } = buildTasteProfile(data);
   const hasProfile = Object.keys(profile.genres).length > 0;
+
+  const dataHash = getDataHash(data);
+  const cached = readCache(dataHash);
+
+  if (cached) {
+    renderResults(grid, cached, heading, refreshBtn, renderCardFn);
+    // Set up reactive watcher for future changes
+    watchTasteProfile(async (newResult) => {
+      const newData = await syncAll();
+      const newHash = getDataHash(newData);
+      const newCached = readCache(newHash);
+      if (newCached) {
+        renderResults(grid, newCached, heading, refreshBtn, renderCardFn);
+      } else {
+        await refreshRecommendations(grid, heading, refreshBtn, renderCardFn, newData, newResult);
+      }
+    }, syncAll);
+    return;
+  }
 
   try {
     const candidates = await getCandidateGames(profile, likedGameIds);
@@ -129,25 +140,71 @@ export async function initRecommendations(renderCardFn) {
     }
 
     if (final.length === 0) {
-      // Fallback: fetch popular games for cold start
       if (isColdStart) {
         const fallback = await getCandidateGames({ genres: {}, tags: {} }, likedGameIds);
         const fallbackRanked = fallback.map(g => ({ game: g, score: g.rating || 0 }));
         const fallbackFinal = diversify(fallbackRanked);
         renderResults(grid, fallbackFinal, heading, refreshBtn, renderCardFn);
-        writeCache(fallbackFinal);
+        writeCache(fallbackFinal, dataHash);
       } else {
         setEmpty(grid, false);
         renderResults(grid, [], heading, refreshBtn, renderCardFn);
       }
-      return;
+    } else {
+      renderResults(grid, final, heading, refreshBtn, renderCardFn);
+      writeCache(final, dataHash);
     }
-
-    renderResults(grid, final, heading, refreshBtn, renderCardFn);
-    writeCache(final);
   } catch {
     setEmpty(grid, false);
   }
+
+  // Set up reactive watcher for future changes
+  watchTasteProfile(async (newResult) => {
+    const newData = await syncAll();
+    const newHash = getDataHash(newData);
+    const newCached = readCache(newHash);
+    if (newCached) {
+      renderResults(grid, newCached, heading, refreshBtn, renderCardFn);
+    } else {
+      await refreshRecommendations(grid, heading, refreshBtn, renderCardFn, newData, newResult);
+    }
+  }, syncAll);
+}
+
+async function refreshRecommendations(grid, heading, refreshBtn, renderCardFn, data, profileResult) {
+  setLoading(grid);
+  try {
+    const { profile, likedGameIds } = profileResult || buildTasteProfile(data);
+    const hasProfile = Object.keys(profile.genres).length > 0;
+    const candidates = await getCandidateGames(profile, likedGameIds);
+    const ranked = rankRecommendations(candidates, profile);
+    const final = diversify(ranked);
+
+    if (heading) {
+      heading.textContent = hasProfile ? "Recommended for you" : "Popular right now";
+    }
+
+    const dataHash = getDataHash(data);
+    if (final.length > 0) {
+      renderResults(grid, final, heading, refreshBtn, renderCardFn);
+      writeCache(final, dataHash);
+    } else if (hasProfile) {
+      setEmpty(grid, false);
+      renderResults(grid, [], heading, refreshBtn, renderCardFn);
+    } else {
+      const fallback = await getCandidateGames({ genres: {}, tags: {} }, likedGameIds);
+      const fallbackRanked = fallback.map(g => ({ game: g, score: g.rating || 0 }));
+      const fallbackFinal = diversify(fallbackRanked);
+      renderResults(grid, fallbackFinal, heading, refreshBtn, renderCardFn);
+      writeCache(fallbackFinal, dataHash);
+    }
+  } catch {
+    setEmpty(grid, false);
+  }
+}
+
+export async function initRecommendations(renderCardFn) {
+  await generateRecommendations(renderCardFn);
 }
 
 function renderResults(grid, results, heading, refreshBtn, renderCardFn) {
