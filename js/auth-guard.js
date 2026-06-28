@@ -55,8 +55,12 @@ async function loadProfileUsername(user) {
       .eq("id", user.id)
       .single();
 
+    console.log("[auth-guard] profiles query result:", { data, error });
+
     nameEl.textContent = (error || !data?.username) ? "User" : data.username;
-  } catch {
+    console.log("[auth-guard] header display name set to:", nameEl.textContent);
+  } catch (err) {
+    console.error("[auth-guard] loadProfileUsername failed:", err);
     nameEl.textContent = "User";
   }
 }
