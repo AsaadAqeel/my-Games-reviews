@@ -339,6 +339,12 @@
       });
     });
 
+    // --- Open tab from URL query param ---
+    const initialTab = new URLSearchParams(location.search).get("tab");
+    if (initialTab === "signup") {
+      document.querySelector('.auth-tabs__tab[data-tab="signup"]')?.click();
+    }
+
     // --- Validation helpers ---
     function isValidEmail(email) {
       return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
