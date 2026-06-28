@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign In / Sign Up - Checkpoint</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg?v=2">
+  <meta name="theme-color" content="#141417">
+  <style>
+    .auth-page {
+      min-height: calc(100vh - 140px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem 1rem;
+    }
+
+    .auth-card {
+      width: 100%;
+      max-width: 420px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 2.5rem 2rem;
+    }
+
+    .auth-card__logo {
+      font-family: "Space Grotesk", "Inter", sans-serif;
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: var(--text);
+      text-align: center;
+      margin-bottom: 0.35rem;
+      text-decoration: none;
+    }
+
+    .auth-card__logo span { color: var(--accent); }
+
+    .auth-card__subtitle {
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      margin-bottom: 2rem;
+    }
+
+    .auth-tabs {
+      display: flex;
+      gap: 0;
+      margin-bottom: 1.75rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+    }
+
+    .auth-tabs__tab {
+      flex: 1;
+      padding: 0.7rem 1rem;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-family: inherit;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background var(--transition), color var(--transition);
+    }
+
+    .auth-tabs__tab:hover {
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--text);
+    }
+
+    .auth-tabs__tab--active {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .auth-tabs__tab--active:hover {
+      background: var(--accent-hover);
+      color: #fff;
+    }
+
+    .auth-form { display: none; }
+    .auth-form.is-active { display: block; }
+
+    .auth-form .form-group {
+      margin-bottom: 1.1rem;
+    }
+
+    .auth-form .form-group label {
+      display: block;
+      font-size: 0.78rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+      margin-bottom: 0.35rem;
+    }
+
+    .auth-form .form-group input {
+      width: 100%;
+      padding: 0.7rem 0.85rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--bg-inset);
+      color: var(--text);
+      font-size: 0.9rem;
+      font-family: inherit;
+      transition: border-color var(--transition), box-shadow var(--transition);
+    }
+
+    .auth-form .form-group input:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: var(--focus-ring);
+    }
+
+    .auth-form .form-group input::placeholder { color: #555; }
+
+    .auth-form .form-error {
+      color: var(--accent-soft);
+      font-size: 0.78rem;
+      margin-top: 0.3rem;
+      display: none;
+    }
+
+    .auth-form .form-error.visible { display: block; }
+
+    .auth-form__submit {
+      width: 100%;
+      padding: 0.75rem 1.5rem;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius-sm);
+      font-family: inherit;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 0.5rem;
+      transition: background var(--transition), transform var(--transition), box-shadow var(--transition);
+    }
+
+    .auth-form__submit:hover {
+      background: var(--accent-hover);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 14px rgba(229, 9, 20, 0.35);
+    }
+
+    .auth-form__submit:active { transform: translateY(0); }
+
+    .auth-form__submit:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+
+    .auth-message {
+      text-align: center;
+      padding: 0.75rem 1rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.85rem;
+      margin-top: 1rem;
+      display: none;
+    }
+
+    .auth-message.visible { display: block; }
+
+    .auth-message--error {
+      background: rgba(229, 9, 20, 0.1);
+      border: 1px solid rgba(229, 9, 20, 0.3);
+      color: var(--accent-soft);
+    }
+
+    .auth-message--success {
+      background: rgba(34, 197, 94, 0.1);
+      border: 1px solid rgba(34, 197, 94, 0.3);
+      color: #4ade80;
+    }
+
+    .auth-message--info {
+      background: rgba(59, 130, 246, 0.1);
+      border: 1px solid rgba(59, 130, 246, 0.3);
+      color: #60a5fa;
+    }
+
+    .auth-logged-in {
+      text-align: center;
+      padding: 2rem 0;
+    }
+
+    .auth-logged-in__email {
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 1.5rem;
+      word-break: break-all;
+    }
+
+    .auth-logged-in__btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.65rem 1.5rem;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text-muted);
+      font-family: inherit;
+      font-size: 0.88rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background var(--transition), color var(--transition), border-color var(--transition);
+    }
+
+    .auth-logged-in__btn:hover {
+      background: rgba(229, 9, 20, 0.1);
+      border-color: var(--accent-soft);
+      color: var(--accent-soft);
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="container">
+      <a href="index.html" class="site-logo">Check<span>point</span></a>
+      <div class="search-bar" role="search" style="display:none;"></div>
+      <button type="button" id="nav-toggle" class="nav-toggle" aria-label="Menu" aria-expanded="false" aria-controls="main-nav">
+        <span class="nav-toggle__bar"></span>
+        <span class="nav-toggle__bar"></span>
+        <span class="nav-toggle__bar"></span>
+      </button>
+      <nav id="main-nav" class="main-nav" aria-label="Main navigation">
+        <a href="index.html" class="main-nav__link">Home</a>
+        <a href="games.html" class="main-nav__link">All Games</a>
+        <a href="played.html" class="main-nav__link">Played</a>
+        <a href="favorites.html" class="main-nav__link">Favorites</a>
+        <a href="lists.html" class="main-nav__link">Lists</a>
+        <a href="my-reviews.html" class="main-nav__link">My Reviews</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="auth-page">
+    <div class="auth-card">
+      <a href="index.html" class="auth-card__logo">Check<span>point</span></a>
+      <p class="auth-card__subtitle">Track, review, and discover games</p>
+
+      <!-- Tabs -->
+      <div class="auth-tabs">
+        <button class="auth-tabs__tab auth-tabs__tab--active" data-tab="login" type="button">Sign In</button>
+        <button class="auth-tabs__tab" data-tab="signup" type="button">Sign Up</button>
+      </div>
+
+      <!-- Sign In Form -->
+      <form id="login-form" class="auth-form is-active" novalidate>
+        <div class="form-group">
+          <label for="login-email">Email</label>
+          <input type="email" id="login-email" placeholder="you@example.com" autocomplete="email" required>
+          <div class="form-error" id="login-email-error"></div>
+        </div>
+        <div class="form-group">
+          <label for="login-password">Password</label>
+          <input type="password" id="login-password" placeholder="Your password" autocomplete="current-password" required>
+          <div class="form-error" id="login-password-error"></div>
+        </div>
+        <button type="submit" class="auth-form__submit" id="login-submit">Sign In</button>
+        <div class="auth-message" id="login-message"></div>
+      </form>
+
+      <!-- Sign Up Form -->
+      <form id="signup-form" class="auth-form" novalidate>
+        <div class="form-group">
+          <label for="signup-email">Email</label>
+          <input type="email" id="signup-email" placeholder="you@example.com" autocomplete="email" required>
+          <div class="form-error" id="signup-email-error"></div>
+        </div>
+        <div class="form-group">
+          <label for="signup-password">Password</label>
+          <input type="password" id="signup-password" placeholder="Min 6 characters" autocomplete="new-password" required>
+          <div class="form-error" id="signup-password-error"></div>
+        </div>
+        <div class="form-group">
+          <label for="signup-confirm">Confirm Password</label>
+          <input type="password" id="signup-confirm" placeholder="Repeat your password" autocomplete="new-password" required>
+          <div class="form-error" id="signup-confirm-error"></div>
+        </div>
+        <button type="submit" class="auth-form__submit" id="signup-submit">Create Account</button>
+        <div class="auth-message" id="signup-message"></div>
+      </form>
+
+      <!-- Logged-in state -->
+      <div id="logged-in-view" class="auth-logged-in" style="display:none;">
+        <p style="color:var(--text-muted);margin-bottom:0.5rem;">You are signed in as</p>
+        <p class="auth-logged-in__email" id="logged-in-email"></p>
+        <button type="button" class="auth-logged-in__btn" id="sign-out-btn">Sign Out</button>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <div class="container">
+      <p>Game data powered by <a href="https://rawg.io" target="_blank" rel="noopener noreferrer">RAWG</a> &mdash; <a href="https://rawg.io" target="_blank" rel="noopener noreferrer">https://rawg.io</a></p>
+    </div>
+  </footer>
+
+  <script type="module">
+    import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+    const SUPABASE_URL = "https://dcdcuzfvnafvqazbjcor.supabase.co";
+    const SUPABASE_ANON_KEY = "sb_publishable_Dc7d2wJF_UK_n6qtz_uUvw_FnYb5s_W";
+
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    // --- DOM refs ---
+    const tabs          = document.querySelectorAll(".auth-tabs__tab");
+    const loginForm     = document.getElementById("login-form");
+    const signupForm    = document.getElementById("signup-form");
+    const loggedInView  = document.getElementById("logged-in-view");
+    const loggedInEmail = document.getElementById("logged-in-email");
+    const signOutBtn    = document.getElementById("sign-out-btn");
+
+    // --- Tab switching ---
+    tabs.forEach(tab => {
+      tab.addEventListener("click", () => {
+        tabs.forEach(t => t.classList.remove("auth-tabs__tab--active"));
+        tab.classList.add("auth-tabs__tab--active");
+
+        const target = tab.dataset.tab;
+        loginForm.classList.toggle("is-active", target === "login");
+        signupForm.classList.toggle("is-active", target === "signup");
+
+        clearMessages();
+      });
+    });
+
+    // --- Validation helpers ---
+    function isValidEmail(email) {
+      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    }
+
+    function showError(inputId, errorId, message) {
+      const errorEl = document.getElementById(errorId);
+      errorEl.textContent = message;
+      errorEl.classList.add("visible");
+    }
+
+    function clearError(errorId) {
+      const errorEl = document.getElementById(errorId);
+      errorEl.classList.remove("visible");
+      errorEl.textContent = "";
+    }
+
+    function showMessage(elementId, message, type) {
+      const el = document.getElementById(elementId);
+      el.textContent = message;
+      el.className = "auth-message visible auth-message--" + type;
+    }
+
+    function clearMessages() {
+      document.querySelectorAll(".auth-message").forEach(m => {
+        m.classList.remove("visible");
+        m.textContent = "";
+      });
+      document.querySelectorAll(".form-error").forEach(e => {
+        e.classList.remove("visible");
+        e.textContent = "";
+      });
+    }
+
+    function setLoading(btnId, loading) {
+      const btn = document.getElementById(btnId);
+      btn.disabled = loading;
+      btn.textContent = loading ? "Please wait..." : btn.dataset.originalText || btn.textContent;
+    }
+
+    // Save original button text
+    document.getElementById("login-submit").dataset.originalText = "Sign In";
+    document.getElementById("signup-submit").dataset.originalText = "Create Account";
+
+    // --- Login ---
+    loginForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      clearMessages();
+
+      const email = document.getElementById("login-email").value.trim();
+      const password = document.getElementById("login-password").value;
+
+      let hasError = false;
+
+      if (!email || !isValidEmail(email)) {
+        showError("login-email", "login-email-error", "Please enter a valid email address.");
+        hasError = true;
+      } else {
+        clearError("login-email-error");
+      }
+
+      if (!password) {
+        showError("login-password", "login-password-error", "Password is required.");
+        hasError = true;
+      } else {
+        clearError("login-password-error");
+      }
+
+      if (hasError) return;
+
+      setLoading("login-submit", true);
+
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+
+      setLoading("login-submit", false);
+
+      if (error) {
+        showMessage("login-message", error.message, "error");
+        return;
+      }
+
+      showMessage("login-message", "Signed in successfully!", "success");
+    });
+
+    // --- Signup ---
+    signupForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      clearMessages();
+
+      const email    = document.getElementById("signup-email").value.trim();
+      const password = document.getElementById("signup-password").value;
+      const confirm  = document.getElementById("signup-confirm").value;
+
+      let hasError = false;
+
+      if (!email || !isValidEmail(email)) {
+        showError("signup-email", "signup-email-error", "Please enter a valid email address.");
+        hasError = true;
+      } else {
+        clearError("signup-email-error");
+      }
+
+      if (!password || password.length < 6) {
+        showError("signup-password", "signup-password-error", "Password must be at least 6 characters.");
+        hasError = true;
+      } else {
+        clearError("signup-password-error");
+      }
+
+      if (password !== confirm) {
+        showError("signup-confirm", "signup-confirm-error", "Passwords do not match.");
+        hasError = true;
+      } else {
+        clearError("signup-confirm-error");
+      }
+
+      if (hasError) return;
+
+      setLoading("signup-submit", true);
+
+      const { data, error } = await supabase.auth.signUp({ email, password });
+
+      setLoading("signup-submit", false);
+
+      if (error) {
+        showMessage("signup-message", error.message, "error");
+        return;
+      }
+
+      if (data.user && data.user.identities && data.user.identities.length === 0) {
+        showMessage("signup-message", "An account with this email already exists.", "error");
+        return;
+      }
+
+      showMessage("signup-message", "Account created! Check your email to confirm.", "success");
+    });
+
+    // --- Sign out ---
+    signOutBtn.addEventListener("click", async () => {
+      await supabase.auth.signOut();
+    });
+
+    // --- Auth state listener ---
+    supabase.auth.onAuthStateChange((event, session) => {
+      console.log("Auth event:", event);
+
+      if (session) {
+        console.log("User:", session.user.email);
+        loginForm.style.display = "none";
+        signupForm.style.display = "none";
+        document.querySelector(".auth-tabs").style.display = "none";
+        loggedInView.style.display = "block";
+        loggedInEmail.textContent = session.user.email;
+      } else {
+        console.log("No active session");
+        loginForm.style.display = "";
+        signupForm.style.display = "";
+        document.querySelector(".auth-tabs").style.display = "";
+        loggedInView.style.display = "none";
+
+        // Restore correct active tab
+        const activeTab = document.querySelector(".auth-tabs__tab--active");
+        if (activeTab) {
+          const target = activeTab.dataset.tab;
+          loginForm.classList.toggle("is-active", target === "login");
+          signupForm.classList.toggle("is-active", target === "signup");
+        }
+      }
+    });
+
+    // --- Check initial session ---
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session) {
+      loginForm.style.display = "none";
+      signupForm.style.display = "none";
+      document.querySelector(".auth-tabs").style.display = "none";
+      loggedInView.style.display = "block";
+      loggedInEmail.textContent = session.user.email;
+    }
+
+    // --- Mobile nav toggle ---
+    const navToggle = document.getElementById("nav-toggle");
+    const mainNav   = document.getElementById("main-nav");
+    navToggle.addEventListener("click", () => {
+      const expanded = navToggle.getAttribute("aria-expanded") === "true";
+      navToggle.setAttribute("aria-expanded", String(!expanded));
+      mainNav.classList.toggle("is-open");
+    });
+  </script>
+</body>
+</html>
