@@ -1703,11 +1703,7 @@ function renderReviewsSection(container, gameId) {
       rating,
       title: titleVal,
       body: bodyVal,
-      name: nameVal || "Anonymous",
-      gameName: gameData.name,
-      gameImage: gameData.background_image || "",
-      genres: (gameData.genres || []).map(g => ({ slug: g.slug, name: g.name })),
-      tags: (gameData.tags || []).map(t => ({ slug: t.slug, name: t.name }))
+      name: nameVal || "Anonymous"
     });
 
     submitBtn.disabled = false;
