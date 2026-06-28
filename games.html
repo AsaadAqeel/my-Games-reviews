@@ -96,29 +96,5 @@
 
   <script type="module" src="js/auth-guard.js?v=3.1"></script>
   <script type="module" src="js/app.js"></script>
-  <script>
-    (function () {
-      var trigger = document.querySelector(".auth-user-badge__trigger");
-      var dropdown = document.querySelector(".profile-dropdown");
-      if (!trigger || !dropdown) return;
-      trigger.addEventListener("click", function (e) {
-        e.stopPropagation();
-        var isOpen = dropdown.classList.toggle("show");
-        trigger.setAttribute("aria-expanded", String(isOpen));
-      });
-      window.addEventListener("click", function (e) {
-        if (!dropdown.contains(e.target) && !trigger.contains(e.target)) {
-          dropdown.classList.remove("show");
-          trigger.setAttribute("aria-expanded", "false");
-        }
-      });
-      window.addEventListener("keydown", function (e) {
-        if (e.key === "Escape") {
-          dropdown.classList.remove("show");
-          trigger.setAttribute("aria-expanded", "false");
-        }
-      });
-    })();
-  </script>
 </body>
 </html>
