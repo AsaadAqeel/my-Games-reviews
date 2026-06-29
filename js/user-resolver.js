@@ -2,13 +2,28 @@ import { supabase } from "./supabase-client.js";
 
 export async function resolveUser() {
   const urlParams = new URLSearchParams(window.location.search);
-  const usernameParam = urlParams.get("username") || urlParams.get("user_id");
+  const usernameParam = urlParams.get("username");
+  const userIdParam   = urlParams.get("user_id");
 
   if (usernameParam) {
     const { data, error } = await supabase
       .from("profiles")
       .select("id, username, created_at")
       .eq("username", usernameParam)
+      .maybeSingle();
+
+    if (error) {
+      console.error("resolveUser error:", error.message);
+      return null;
+    }
+    return data;
+  }
+
+  if (userIdParam) {
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("id, username, created_at")
+      .eq("id", userIdParam)
       .maybeSingle();
 
     if (error) {
