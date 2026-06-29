@@ -500,10 +500,48 @@ function renderCuratedCard(game) {
   }
   cover.appendChild(img);
 
-  const rating = document.createElement("span");
-  rating.className = "curated-card__rating";
-  rating.textContent = "\u2605 " + (game.rating != null ? game.rating.toFixed(1) : "N/A");
-  cover.appendChild(rating);
+  var scoreText = "";
+  if (game.metacritic) {
+    scoreText = game.metacritic;
+  } else if (game.rating != null) {
+    scoreText = game.rating.toFixed(1) + " /5";
+  }
+  if (scoreText) {
+    const rating = document.createElement("span");
+    rating.className = "curated-card__rating";
+    rating.textContent = scoreText;
+    cover.appendChild(rating);
+  }
+
+  var platforms = [];
+  if (game.platforms && game.platforms.length > 0) {
+    var seen = {};
+    for (var p = 0; p < game.platforms.length && platforms.length < 3; p++) {
+      var pn = game.platforms[p].platform && game.platforms[p].platform.name;
+      if (pn && !seen[pn]) {
+        seen[pn] = true;
+        var short = pn;
+        if (pn.indexOf("PlayStation") === 0) short = "PS" + pn.replace("PlayStation ", "");
+        else if (pn.indexOf("Xbox") === 0) short = "Xbox";
+        else if (pn === "Nintendo Switch") short = "Switch";
+        else if (pn === "PC") short = "PC";
+        else if (pn.indexOf("macOS") === 0) short = "Mac";
+        else if (pn.indexOf("Linux") === 0) short = "Linux";
+        platforms.push(short);
+      }
+    }
+  }
+  if (platforms.length > 0) {
+    var chipsWrap = document.createElement("div");
+    chipsWrap.className = "platform-chips";
+    for (var c = 0; c < platforms.length; c++) {
+      var chip = document.createElement("span");
+      chip.className = "platform-chip";
+      chip.textContent = platforms[c];
+      chipsWrap.appendChild(chip);
+    }
+    cover.appendChild(chipsWrap);
+  }
 
   const caption = document.createElement("div");
   caption.className = "curated-card__caption";
@@ -698,10 +736,15 @@ async function loadFeaturedHero() {
     var meta = document.createElement("div");
     meta.className = "featured-hero__meta";
 
-    if (s.game.rating != null) {
+    if (s.game.metacritic) {
       var rating = document.createElement("span");
       rating.className = "featured-hero__rating";
-      rating.textContent = "\u2605 " + s.game.rating.toFixed(1);
+      rating.textContent = "MC " + s.game.metacritic;
+      meta.appendChild(rating);
+    } else if (s.game.rating != null) {
+      var rating = document.createElement("span");
+      rating.className = "featured-hero__rating";
+      rating.textContent = "\u2605 " + s.game.rating.toFixed(1) + " /5";
       meta.appendChild(rating);
     }
 
@@ -1049,6 +1092,43 @@ async function initCatalog() {
         }
         link.appendChild(img);
 
+        if (game.metacritic) {
+          const chip = document.createElement("span");
+          chip.className = "score-chip";
+          chip.textContent = game.metacritic;
+          link.appendChild(chip);
+        }
+
+        var cPlatforms = [];
+        if (game.platforms && game.platforms.length > 0) {
+          var cSeen = {};
+          for (var p = 0; p < game.platforms.length && cPlatforms.length < 3; p++) {
+            var pn = game.platforms[p].platform && game.platforms[p].platform.name;
+            if (pn && !cSeen[pn]) {
+              cSeen[pn] = true;
+              var short = pn;
+              if (pn.indexOf("PlayStation") === 0) short = "PS" + pn.replace("PlayStation ", "");
+              else if (pn.indexOf("Xbox") === 0) short = "Xbox";
+              else if (pn === "Nintendo Switch") short = "Switch";
+              else if (pn === "PC") short = "PC";
+              else if (pn.indexOf("macOS") === 0) short = "Mac";
+              else if (pn.indexOf("Linux") === 0) short = "Linux";
+              cPlatforms.push(short);
+            }
+          }
+        }
+        if (cPlatforms.length > 0) {
+          var chipsWrap = document.createElement("div");
+          chipsWrap.className = "platform-chips";
+          for (var c = 0; c < cPlatforms.length; c++) {
+            var chip = document.createElement("span");
+            chip.className = "platform-chip";
+            chip.textContent = cPlatforms[c];
+            chipsWrap.appendChild(chip);
+          }
+          link.appendChild(chipsWrap);
+        }
+
         const body = document.createElement("div");
         body.className = "game-card__body";
 
@@ -1065,9 +1145,17 @@ async function initCatalog() {
         const scores = document.createElement("div");
         scores.className = "game-card__scores";
 
+        var scoreDisplay = "";
+        if (game.metacritic) {
+          scoreDisplay = "MC: " + game.metacritic;
+        } else if (game.rating != null) {
+          scoreDisplay = "RAWG: " + game.rating.toFixed(1);
+        } else {
+          scoreDisplay = "RAWG: N/A";
+        }
         const rawgScore = document.createElement("span");
         rawgScore.className = "game-card__rawg-score";
-        rawgScore.textContent = "RAWG: " + (game.rating != null ? game.rating.toFixed(1) : "N/A");
+        rawgScore.textContent = scoreDisplay;
         scores.appendChild(rawgScore);
 
         const userScore = document.createElement("span");
@@ -1076,8 +1164,7 @@ async function initCatalog() {
         if (avg) {
           userScore.textContent = "\u2605 " + avg.average.toFixed(1) + " (" + avg.count + ")";
         } else {
-          userScore.textContent = "No reviews";
-          userScore.style.color = "var(--text-muted)";
+          userScore.textContent = "";
         }
         scores.appendChild(userScore);
 
@@ -2416,13 +2503,36 @@ function initHeaderNav() {
 function initHeaderSearch() {
   const searchInput = document.getElementById("search-input");
   const searchBtn = document.getElementById("search-btn");
+  const searchClear = document.getElementById("search-clear");
 
   if (!searchInput) return;
+
+  function updateClearBtn() {
+    if (searchClear) {
+      searchClear.style.display = searchInput.value.trim() ? "flex" : "none";
+    }
+  }
+
+  if (searchClear) {
+    searchClear.addEventListener("click", () => {
+      searchInput.value = "";
+      updateClearBtn();
+      searchInput.focus();
+      if (!isCatalogPage()) return;
+      currentSearch = "";
+      updateResetBtn();
+      loadGames(1);
+    });
+  }
+
+  searchInput.addEventListener("input", updateClearBtn);
+  updateClearBtn();
 
   if (isCatalogPage()) {
     const searchParam = getParam("search");
     if (searchParam) {
       searchInput.value = searchParam;
+      updateClearBtn();
     }
     return;
   }
