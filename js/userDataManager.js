@@ -409,11 +409,21 @@ export async function fetchGameReviews(gameId) {
  * Fetches all reviews by the current user (across all games).
  */
 export async function fetchAllUserReviews() {
-  return fetchTable("reviews", {
-    select: "*, profiles(username, avatar_url)",
-    order: "created_at",
-    ascending: false
-  });
+  const user = await requireAuth();
+  if (!user) return { data: [], error: "You must be signed in." };
+
+  const { data, error } = await supabase
+    .from("reviews")
+    .select("*, profiles(username, avatar_url)")
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error("fetchAllUserReviews error:", error.message);
+    return { data: [], error: "Failed to load reviews." };
+  }
+
+  return { data: data || [] };
 }
 
 // ===================== LISTS =====================
