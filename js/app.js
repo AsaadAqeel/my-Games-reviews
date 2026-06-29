@@ -1772,10 +1772,27 @@ function renderReviewsSection(container, gameId) {
         const header = document.createElement("div");
         header.className = "review-card__header";
 
-        const author = document.createElement("span");
-        author.className = "review-card__author";
-        author.textContent = review.name;
-        header.appendChild(author);
+        const authorWrap = document.createElement("span");
+        authorWrap.className = "review-card__author";
+
+        const profile = review.profiles || {};
+        const avatarUrl = profile.avatar_url || "";
+        const username = profile.username || review.name || "Anonymous";
+
+        if (avatarUrl) {
+          const avatar = document.createElement("img");
+          avatar.className = "review-card__avatar";
+          avatar.src = avatarUrl;
+          avatar.alt = username;
+          avatar.onerror = function() { this.style.display = "none"; };
+          authorWrap.appendChild(avatar);
+        }
+
+        const nameSpan = document.createElement("span");
+        nameSpan.textContent = username;
+        authorWrap.appendChild(nameSpan);
+
+        header.appendChild(authorWrap);
 
         const date = document.createElement("span");
         date.className = "review-card__date";
@@ -2284,10 +2301,27 @@ async function initMyReviewsPage() {
       const header = document.createElement("div");
       header.className = "review-card__header";
 
-      const author = document.createElement("span");
-      author.className = "review-card__author";
-      author.textContent = review.name;
-      header.appendChild(author);
+      const authorWrap = document.createElement("span");
+      authorWrap.className = "review-card__author";
+
+      const profile = review.profiles || {};
+      const avatarUrl = profile.avatar_url || "";
+      const username = profile.username || review.name || "Anonymous";
+
+      if (avatarUrl) {
+        const avatar = document.createElement("img");
+        avatar.className = "review-card__avatar";
+        avatar.src = avatarUrl;
+        avatar.alt = username;
+        avatar.onerror = function() { this.style.display = "none"; };
+        authorWrap.appendChild(avatar);
+      }
+
+      const nameSpan = document.createElement("span");
+      nameSpan.textContent = username;
+      authorWrap.appendChild(nameSpan);
+
+      header.appendChild(authorWrap);
 
       const date = document.createElement("span");
       date.className = "review-card__date";

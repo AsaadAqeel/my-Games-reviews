@@ -1002,8 +1002,20 @@ footer a:hover { color: var(--accent-hover); }
 }
 
 .review-card__author {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
   font-weight: 600;
   font-size: 0.9rem;
+}
+
+.review-card__avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  background: var(--bg-surface);
 }
 
 .review-card__date {

@@ -370,6 +370,7 @@ export async function deleteReview(reviewId) {
  */
 export async function fetchGameReviews(gameId) {
   return fetchTable("reviews", {
+    select: "*, profiles:user_id(username, avatar_url)",
     filters: { game_id: gameId },
     order: "created_at",
     ascending: false
@@ -381,6 +382,7 @@ export async function fetchGameReviews(gameId) {
  */
 export async function fetchAllUserReviews() {
   return fetchTable("reviews", {
+    select: "*, profiles:user_id(username, avatar_url)",
     order: "created_at",
     ascending: false
   });
