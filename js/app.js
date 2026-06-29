@@ -1776,17 +1776,17 @@ function renderReviewsSection(container, gameId) {
         authorWrap.className = "review-card__author";
 
         const profile = review.profiles || {};
-        const avatarUrl = profile.avatar_url || "";
         const username = profile.username || review.name || "Anonymous";
+        const avatarUrl = profile.avatar_url
+          || `https://api.dicebear.com/9.x/avataaars/svg?seed=${encodeURIComponent(username)}&backgroundColor=b6e3f4`;
 
-        if (avatarUrl) {
-          const avatar = document.createElement("img");
-          avatar.className = "review-card__avatar";
-          avatar.src = avatarUrl;
-          avatar.alt = username;
-          avatar.onerror = function() { this.style.display = "none"; };
-          authorWrap.appendChild(avatar);
-        }
+        const avatar = document.createElement("img");
+        avatar.className = "review-card__avatar";
+        avatar.src = avatarUrl;
+        avatar.alt = username;
+        avatar.loading = "lazy";
+        avatar.onerror = function() { this.style.display = "none"; };
+        authorWrap.appendChild(avatar);
 
         const nameSpan = document.createElement("span");
         nameSpan.textContent = username;
@@ -2305,17 +2305,17 @@ async function initMyReviewsPage() {
       authorWrap.className = "review-card__author";
 
       const profile = review.profiles || {};
-      const avatarUrl = profile.avatar_url || "";
       const username = profile.username || review.name || "Anonymous";
+      const avatarUrl = profile.avatar_url
+        || `https://api.dicebear.com/9.x/avataaars/svg?seed=${encodeURIComponent(username)}&backgroundColor=b6e3f4`;
 
-      if (avatarUrl) {
-        const avatar = document.createElement("img");
-        avatar.className = "review-card__avatar";
-        avatar.src = avatarUrl;
-        avatar.alt = username;
-        avatar.onerror = function() { this.style.display = "none"; };
-        authorWrap.appendChild(avatar);
-      }
+      const avatar = document.createElement("img");
+      avatar.className = "review-card__avatar";
+      avatar.src = avatarUrl;
+      avatar.alt = username;
+      avatar.loading = "lazy";
+      avatar.onerror = function() { this.style.display = "none"; };
+      authorWrap.appendChild(avatar);
 
       const nameSpan = document.createElement("span");
       nameSpan.textContent = username;
