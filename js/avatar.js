@@ -1,9 +1,90 @@
 import { supabase } from "./supabase-client.js";
 
 /**
+ * Build a Supabase Storage public URL for an avatar path, with cache-busting.
+ */
+function avatarPublicUrl(avatarUrl, avatarUpdatedAt) {
+  const { data } = supabase.storage.from("avatars").getPublicUrl(avatarUrl);
+  const v = avatarUpdatedAt
+    ? new Date(avatarUpdatedAt).getTime()
+    : Date.now();
+  return `${data.publicUrl}?v=${v}`;
+}
+
+/**
+ * Create an <img> element styled as a circle.
+ */
+function createAvatarImg(src, alt, size) {
+  const img = document.createElement("img");
+  img.src = src;
+  img.alt = alt;
+  img.loading = "lazy";
+  img.style.width = size + "px";
+  img.style.height = size + "px";
+  img.style.borderRadius = "50%";
+  img.style.objectFit = "cover";
+  img.style.display = "block";
+  return img;
+}
+
+/**
+ * Create an initials-fallback element styled as a circle.
+ */
+function createFallback(initial, size) {
+  const fb = document.createElement("span");
+  fb.textContent = initial;
+  fb.style.display = "flex";
+  fb.style.alignItems = "center";
+  fb.style.justifyContent = "center";
+  fb.style.width = size + "px";
+  fb.style.height = size + "px";
+  fb.style.borderRadius = "50%";
+  fb.style.background = "var(--accent)";
+  fb.style.color = "var(--accent-contrast)";
+  fb.style.fontSize = Math.round(size * 0.4) + "px";
+  fb.style.fontWeight = "700";
+  fb.style.lineHeight = "1";
+  fb.style.userSelect = "none";
+  fb.style.flexShrink = "0";
+  return fb;
+}
+
+/**
+ * Render an avatar (image or initials fallback) into a container element.
+ * Works for nav badge, profile page, review cards — any context.
+ *
+ * @param {HTMLElement} targetEl - Container to render into (will be cleared first)
+ * @param {object} profile - { username, avatar_url, avatar_updated_at }
+ * @param {object} [opts] - { size: 96 }
+ */
+export function renderAvatar(targetEl, profile, opts = {}) {
+  if (!targetEl) return;
+  const size = opts.size || 96;
+  const username = profile?.username || "User";
+  const initial = username.charAt(0).toUpperCase();
+
+  // Clear target so fallback never stacks behind a broken image
+  targetEl.innerHTML = "";
+
+  if (profile?.avatar_url) {
+    const src = avatarPublicUrl(profile.avatar_url, profile.avatar_updated_at);
+    const alt = `${username}'s profile picture`;
+    const img = createAvatarImg(src, alt, size);
+
+    img.onerror = () => {
+      targetEl.innerHTML = "";
+      targetEl.appendChild(createFallback(initial, size));
+    };
+
+    targetEl.appendChild(img);
+  } else {
+    targetEl.appendChild(createFallback(initial, size));
+  }
+}
+
+/**
  * Render the nav avatar for the currently signed-in user.
- * Call this after auth state resolves. It reads the user's profile
- * and replaces the .auth-user-badge__avatar span contents.
+ * Uses the generic renderAvatar against the .auth-user-badge__avatar element.
  */
 export async function renderNavAvatar() {
   const {
@@ -22,38 +103,7 @@ export async function renderNavAvatar() {
   const badgeAvatar = document.querySelector(".auth-user-badge__avatar");
   if (!badgeAvatar) return;
 
-  const username = profile.username || "User";
-  const initial = username.charAt(0).toUpperCase();
-
-  if (profile.avatar_url) {
-    const { data } = supabase.storage
-      .from("avatars")
-      .getPublicUrl(profile.avatar_url);
-    const cacheBuster = profile.avatar_updated_at
-      ? `?v=${new Date(profile.avatar_updated_at).getTime()}`
-      : `?v=${Date.now()}`;
-
-    badgeAvatar.innerHTML = "";
-    const img = document.createElement("img");
-    img.src = data.publicUrl + cacheBuster;
-    img.alt = `${username}'s profile picture`;
-    img.className = "auth-user-badge__avatar-img";
-    img.loading = "lazy";
-    img.onerror = () => {
-      badgeAvatar.innerHTML = "";
-      const fallback = document.createElement("span");
-      fallback.className = "auth-user-badge__avatar-fallback";
-      fallback.textContent = initial;
-      badgeAvatar.appendChild(fallback);
-    };
-    badgeAvatar.appendChild(img);
-  } else {
-    badgeAvatar.innerHTML = "";
-    const fallback = document.createElement("span");
-    fallback.className = "auth-user-badge__avatar-fallback";
-    fallback.textContent = initial;
-    badgeAvatar.appendChild(fallback);
-  }
+  renderAvatar(badgeAvatar, profile, { size: 30 });
 }
 
 /**
@@ -88,48 +138,4 @@ export async function getUserProfile() {
     .single();
 
   return { user, profile };
-}
-
-/**
- * Render an avatar (image or initials fallback) into a container element.
- * @param {HTMLElement} container
- * @param {object} profile - { username, avatar_url, avatar_updated_at }
- * @param {object} [opts] - { size: 96 }
- */
-export function renderAvatar(container, profile, opts = {}) {
-  if (!container) return;
-  const size = opts.size || 96;
-  const username = profile?.username || "User";
-  const initial = username.charAt(0).toUpperCase();
-
-  if (profile?.avatar_url) {
-    const { data } = supabase.storage
-      .from("avatars")
-      .getPublicUrl(profile.avatar_url);
-    const cacheBuster = profile.avatar_updated_at
-      ? `?v=${new Date(profile.avatar_updated_at).getTime()}`
-      : `?v=${Date.now()}`;
-
-    container.innerHTML = "";
-    const img = document.createElement("img");
-    img.src = data.publicUrl + cacheBuster;
-    img.alt = `${username}'s profile picture`;
-    img.className = "avatar-preview__img";
-    img.style.width = size + "px";
-    img.style.height = size + "px";
-    img.onerror = () => {
-      container.innerHTML = "";
-      const fb = document.createElement("span");
-      fb.className = "avatar-preview__fallback";
-      fb.textContent = initial;
-      container.appendChild(fb);
-    };
-    container.appendChild(img);
-  } else {
-    container.innerHTML = "";
-    const fb = document.createElement("span");
-    fb.className = "avatar-preview__fallback";
-    fb.textContent = initial;
-    container.appendChild(fb);
-  }
 }

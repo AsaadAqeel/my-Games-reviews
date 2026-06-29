@@ -1,6 +1,7 @@
 import { searchGames, getGameDetail, getGameScreenshots, getGenres, getPlatforms } from "./rawg.js";
 import { initRecommendations } from "./recommendations/recommendations.js";
 import { ensureAuth, onAuthChange } from "./auth-guard.js";
+import { renderAvatar } from "./avatar.js";
 import {
   syncAll, isFavorite, toggleFavorite,
   isPlayed, togglePlayed,
@@ -1677,16 +1678,24 @@ async function initGameDetail() {
 
 function buildAuthorLink(review) {
   const username = review.profiles?.username || review.name || "Anonymous";
-  const avatarUrl = review.profiles?.avatar_url
-    || `https://api.dicebear.com/9.x/avataaars/svg?seed=${encodeURIComponent(username)}&backgroundColor=b6e3f4`;
   const profileHref = review.profiles?.username
     ? `profile.html?username=${encodeURIComponent(review.profiles.username)}`
     : "#";
 
   return `<a href="${profileHref}" class="review-card__author">
-    <img src="${avatarUrl}" alt="${username}'s avatar" class="review-card__avatar" loading="lazy" />
+    <span class="review-card__avatar" data-avatar-username="${username}" data-avatar-url="${review.profiles?.avatar_url || ""}" data-avatar-updated="${review.profiles?.avatar_updated_at || ""}"></span>
     <span>${username}</span>
   </a>`;
+}
+
+function hydrateReviewAvatars(root) {
+  root.querySelectorAll(".review-card__avatar[data-avatar-username]").forEach((el) => {
+    renderAvatar(el, {
+      username: el.dataset.avatarUsername,
+      avatar_url: el.dataset.avatarUrl || null,
+      avatar_updated_at: el.dataset.avatarUpdated || null,
+    }, { size: 28 });
+  });
 }
 
 function renderReviewsSection(container, gameId) {
@@ -1882,6 +1891,8 @@ function renderReviewsSection(container, gameId) {
           ${renderStaticStars(review.rating).outerHTML}
           <div class="review-card__title">${review.title}</div>
           <div class="review-card__body">${review.body}</div>`;
+
+        hydrateReviewAvatars(card);
 
         if (isOwner) {
           const deleteBtn = document.createElement("button");
@@ -2409,6 +2420,8 @@ async function initMyReviewsPage() {
         ${renderStaticStars(review.rating).outerHTML}
         <div class="review-card__title">${review.title}</div>
         <div class="review-card__body">${review.body}</div>`;
+
+      hydrateReviewAvatars(card);
 
       if (currentAuth && review.user_id === currentAuth.id) {
         const deleteBtn = document.createElement("button");

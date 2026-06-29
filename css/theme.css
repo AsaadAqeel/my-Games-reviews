@@ -1727,7 +1727,11 @@ header .container {
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  object-fit: cover;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
 }
 
 .review-card__date {

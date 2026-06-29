@@ -1029,9 +1029,12 @@ footer a:hover { color: var(--accent-hover); }
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  object-fit: cover;
   flex-shrink: 0;
   background: var(--bg-surface);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
 }
 
 .review-card__date {

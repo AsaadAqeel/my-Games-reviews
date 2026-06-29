@@ -1,4 +1,5 @@
 import { supabase } from "./supabase-client.js";
+import { renderAvatar } from "./avatar.js";
 
 const els = {
   username: document.getElementById("profile-username"),
@@ -35,10 +36,6 @@ function formatJoinDate(dateStr) {
   const month = d.toLocaleString("en-US", { month: "long" });
   const year = d.getFullYear();
   return `Joined ${month} ${year}`;
-}
-
-function avatarUrl(username) {
-  return `https://api.dicebear.com/9.x/avataaars/svg?seed=${encodeURIComponent(username)}&backgroundColor=b6e3f4`;
 }
 
 async function countRows(table, userId) {
@@ -84,7 +81,7 @@ async function loadProfile() {
       // Public profile: fetch by username
       const { data, error } = await supabase
         .from("profiles")
-        .select("id, username, created_at")
+        .select("id, username, created_at, avatar_url, avatar_updated_at")
         .eq("username", usernameParam)
         .maybeSingle();
 
@@ -100,7 +97,7 @@ async function loadProfile() {
 
       const { data, error } = await supabase
         .from("profiles")
-        .select("id, username, created_at")
+        .select("id, username, created_at, avatar_url, avatar_updated_at")
         .eq("id", user.id)
         .maybeSingle();
 
@@ -118,8 +115,8 @@ async function loadProfile() {
     setText(els.joined, formatJoinDate(profile.created_at));
     setStatLinks(profile.id);
 
-    const avatar = document.querySelector(".profile-avatar__img");
-    if (avatar) avatar.src = avatarUrl(name);
+    const avatarInner = document.querySelector(".profile-avatar__inner");
+    if (avatarInner) renderAvatar(avatarInner, profile, { size: 104 });
 
     // Stat counts
     const [played, favorite, lists, reviews] = await Promise.all([
