@@ -31,21 +31,22 @@ function todayRange() {
 }
 
 function renderEntry(game) {
-  const div = document.createElement("div");
-  div.className = "diary-entry";
+  const a = document.createElement("a");
+  a.href = `game.html?id=${game.game_id}`;
+  a.className = "diary-entry";
 
   const imgSrc = game.game_image || "";
   const imgHtml = imgSrc
     ? `<img class="diary-entry__thumb" src="${imgSrc}" alt="" onerror="this.style.display='none'" />`
     : `<div class="diary-entry__thumb diary-entry__thumb--fallback"></div>`;
 
-  div.innerHTML = `
+  a.innerHTML = `
     ${imgHtml}
     <div class="diary-entry__info">
       <div class="diary-entry__title">${game.game_name || "Unknown Game"}</div>
       <div class="diary-entry__time">${formatTime(game.created_at)}</div>
     </div>`;
-  return div;
+  return a;
 }
 
 function renderEmpty() {
@@ -79,7 +80,7 @@ async function loadDiary() {
 
     const { data, error } = await supabase
       .from("played_games")
-      .select("game_name, game_image, created_at")
+      .select("game_id, game_name, game_image, created_at")
       .eq("user_id", user.id)
       .gte("created_at", start)
       .lt("created_at", end)
