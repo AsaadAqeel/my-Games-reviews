@@ -1747,6 +1747,9 @@ function renderReviewsSection(container, gameId) {
     const { data: reviews } = await fetchGameReviews(gameId);
     const allReviews = reviews || [];
 
+    const currentUser = await getCurrentUser();
+    const currentUserId = currentUser?.id || null;
+
     if (allReviews.length === 0) {
       const emptyMsg = document.createElement("div");
       emptyMsg.className = "status-message";
@@ -1814,21 +1817,21 @@ function renderReviewsSection(container, gameId) {
         body.textContent = review.body;
         card.appendChild(body);
 
-        const deleteBtn = document.createElement("button");
-        deleteBtn.type = "button";
-        deleteBtn.className = "delete-review-btn";
-        deleteBtn.textContent = "Delete My Review";
-        deleteBtn.addEventListener("click", async () => {
-          const user = await ensureAuth();
-          if (!user) return;
-          if (confirm("Delete this review?")) {
-            deleteBtn.disabled = true;
-            deleteBtn.textContent = "Deleting...";
-            await deleteReviewDb(review.id);
-            renderReviewsSection(container, gameId);
-          }
-        });
-        card.appendChild(deleteBtn);
+        if (currentUserId && review.user_id === currentUserId) {
+          const deleteBtn = document.createElement("button");
+          deleteBtn.type = "button";
+          deleteBtn.className = "delete-review-btn";
+          deleteBtn.textContent = "Delete My Review";
+          deleteBtn.addEventListener("click", async () => {
+            if (confirm("Delete this review?")) {
+              deleteBtn.disabled = true;
+              deleteBtn.textContent = "Deleting...";
+              await deleteReviewDb(review.id);
+              renderReviewsSection(container, gameId);
+            }
+          });
+          card.appendChild(deleteBtn);
+        }
 
         container.appendChild(card);
       }

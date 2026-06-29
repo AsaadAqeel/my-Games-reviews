@@ -369,12 +369,18 @@ export async function deleteReview(reviewId) {
  * Fetches all reviews for a specific game.
  */
 export async function fetchGameReviews(gameId) {
-  return fetchTable("reviews", {
-    select: "*, profiles(username, avatar_url)",
-    filters: { game_id: gameId },
-    order: "created_at",
-    ascending: false
-  });
+  const { data, error } = await supabase
+    .from("reviews")
+    .select("*, profiles(username, avatar_url)")
+    .eq("game_id", gameId)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error("fetchGameReviews error:", error.message);
+    return { data: [], error: "Failed to load reviews." };
+  }
+
+  return { data: data || [] };
 }
 
 /**
