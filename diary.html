@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Diary - Checkpoint</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg?v=2">
+  <meta name="theme-color" content="#141417">
+  <style>
+    .diary-header {
+      padding: 1.25rem 0 0.25rem;
+    }
+
+    .diary-header__title {
+      font-family: "Space Grotesk", "Inter", sans-serif;
+      font-size: 1.6rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    .diary-header__date {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-top: 0.25rem;
+    }
+
+    #diary-list {
+      padding: 1.25rem 0 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.65rem;
+    }
+
+    .diary-entry {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 0.9rem 1.15rem;
+      transition: border-color var(--transition);
+    }
+
+    .diary-entry:hover {
+      border-color: #3a3a3a;
+    }
+
+    .diary-entry__thumb {
+      width: 56px;
+      height: 32px;
+      object-fit: cover;
+      border-radius: 4px;
+      flex-shrink: 0;
+      background: var(--bg-surface);
+    }
+
+    .diary-entry__info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .diary-entry__title {
+      font-size: 0.92rem;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .diary-entry__time {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 0.15rem;
+    }
+
+    .diary-empty,
+    .diary-error {
+      text-align: center;
+      padding: 3rem 1.5rem;
+      color: var(--text-muted);
+      font-size: 0.95rem;
+    }
+
+    .diary-error {
+      color: var(--accent-soft);
+      background: rgba(229, 9, 20, 0.08);
+      border: 1px solid rgba(229, 9, 20, 0.25);
+      border-radius: var(--radius);
+      margin-top: 1rem;
+    }
+
+    .diary-loading {
+      display: flex;
+      justify-content: center;
+      padding: 3rem 0;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="container">
+      <a href="index.html" class="site-logo">Check<span>point</span></a>
+      <div class="search-bar" role="search">
+        <label for="search-input" class="sr-only" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);">Search games</label>
+        <input type="search" id="search-input" placeholder="Search games..." autocomplete="off">
+        <button type="button" id="search-btn" aria-label="Search"><span class="search-btn__text">Search</span><svg class="search-btn__icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></button>
+      </div>
+      <button type="button" id="nav-toggle" class="nav-toggle" aria-label="Menu" aria-expanded="false" aria-controls="main-nav">
+        <span class="nav-toggle__bar"></span>
+        <span class="nav-toggle__bar"></span>
+        <span class="nav-toggle__bar"></span>
+      </button>
+      <nav id="main-nav" class="main-nav" aria-label="Main navigation">
+        <a href="index.html" class="main-nav__link">Home</a>
+        <a href="games.html" class="main-nav__link">All Games</a>
+        <a href="played.html" class="main-nav__link">Played</a>
+        <a href="favorites.html" class="main-nav__link">Favorites</a>
+        <a href="lists.html" class="main-nav__link">Lists</a>
+        <a href="my-reviews.html" class="main-nav__link">My Reviews</a>
+        <div id="auth-user-badge" class="auth-user-badge" style="display:none;">
+          <button type="button" class="auth-user-badge__trigger" aria-haspopup="true" aria-expanded="false">
+            <span class="auth-user-badge__avatar">&#128100;</span>
+            <span class="auth-user-badge__name profile-name-display"></span>
+          </button>
+          <div class="profile-dropdown">
+            <a href="profile.html" class="profile-dropdown__item">My Profile</a>
+            <a href="settings.html" class="profile-dropdown__item">Settings</a>
+            <button type="button" class="profile-dropdown__item profile-dropdown__item--signout" data-auth-signout>Sign Out</button>
+          </div>
+        </div>
+        <a href="auth.html" class="main-nav__auth">Sign up</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <div class="guest-prompt" data-auth="guest">
+      <svg class="guest-prompt__icon" xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+      </svg>
+      <h2 class="guest-prompt__title">Sign in to view your diary</h2>
+      <p class="guest-prompt__text">Log in or create an account to see a daily log of games you've played.</p>
+      <div class="guest-prompt__actions">
+        <a href="auth.html" class="guest-prompt__btn guest-prompt__btn--primary">Log in</a>
+        <a href="auth.html?tab=signup" class="guest-prompt__btn guest-prompt__btn--ghost">Sign up</a>
+      </div>
+    </div>
+
+    <div class="diary-header">
+      <h1 class="diary-header__title">Diary</h1>
+      <p class="diary-header__date" id="diary-date"></p>
+    </div>
+
+    <div class="diary-loading" id="diary-loading">
+      <div class="spinner"></div>
+    </div>
+
+    <div id="diary-list" aria-live="polite"></div>
+  </main>
+
+  <footer>
+    <div class="container">
+      <p>Game data powered by <a href="https://rawg.io" target="_blank" rel="noopener noreferrer">RAWG</a> &mdash; <a href="https://rawg.io" target="_blank" rel="noopener noreferrer">https://rawg.io</a></p>
+    </div>
+  </footer>
+
+  <script src="js/profile-menu.js?v=1" defer></script>
+  <script type="module" src="js/auth-guard.js?v=4.1"></script>
+  <script type="module" src="js/app.js?v=4.0"></script>
+  <script type="module" src="js/diary.js?v=1"></script>
+</body>
+</html>
