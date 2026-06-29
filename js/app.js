@@ -1589,28 +1589,17 @@ async function initGameDetail() {
 // ===================== REVIEWS SECTION =====================
 
 function buildAuthorLink(review) {
-  const profile = review.profiles || {};
-  const username = profile.username || review.name || "Anonymous";
-  const avatarUrl = profile.avatar_url
+  const username = review.profiles?.username || review.name || "Anonymous";
+  const avatarUrl = review.profiles?.avatar_url
     || `https://api.dicebear.com/9.x/avataaars/svg?seed=${encodeURIComponent(username)}&backgroundColor=b6e3f4`;
+  const profileHref = review.profiles?.username
+    ? `profile.html?username=${encodeURIComponent(review.profiles.username)}`
+    : "#";
 
-  const link = document.createElement("a");
-  link.href = profile.username ? `profile.html?username=${encodeURIComponent(profile.username)}` : "#";
-  link.className = "review-card__author";
-
-  const avatar = document.createElement("img");
-  avatar.className = "review-card__avatar";
-  avatar.src = avatarUrl;
-  avatar.alt = username;
-  avatar.loading = "lazy";
-  avatar.onerror = function() { this.style.display = "none"; };
-  link.appendChild(avatar);
-
-  const nameSpan = document.createElement("span");
-  nameSpan.textContent = username;
-  link.appendChild(nameSpan);
-
-  return link;
+  return `<a href="${profileHref}" class="review-card__author">
+    <img src="${avatarUrl}" alt="${username}'s avatar" class="review-card__avatar" loading="lazy" />
+    <span>${username}</span>
+  </a>`;
 }
 
 function renderReviewsSection(container, gameId) {
@@ -1794,36 +1783,20 @@ function renderReviewsSection(container, gameId) {
       if (scoreCnt) scoreCnt.textContent = count + " on-site review" + (count !== 1 ? "s" : "");
 
       for (const review of allReviews) {
+        const isOwner = currentUserId && review.user_id === currentUserId;
+
         const card = document.createElement("div");
         card.className = "review-card";
+        card.innerHTML = `
+          <div class="review-card__header">
+            ${buildAuthorLink(review)}
+            <span class="review-card__date">${formatDate(new Date(review.created_at).getTime())}</span>
+          </div>
+          ${renderStaticStars(review.rating).outerHTML}
+          <div class="review-card__title">${review.title}</div>
+          <div class="review-card__body">${review.body}</div>`;
 
-        const header = document.createElement("div");
-        header.className = "review-card__header";
-
-        const authorLink = buildAuthorLink(review);
-        header.appendChild(authorLink);
-
-        const date = document.createElement("span");
-        date.className = "review-card__date";
-        date.textContent = formatDate(new Date(review.created_at).getTime());
-        header.appendChild(date);
-
-        card.appendChild(header);
-
-        const starsEl = renderStaticStars(review.rating);
-        card.appendChild(starsEl);
-
-        const reviewTitle = document.createElement("div");
-        reviewTitle.className = "review-card__title";
-        reviewTitle.textContent = review.title;
-        card.appendChild(reviewTitle);
-
-        const body = document.createElement("div");
-        body.className = "review-card__body";
-        body.textContent = review.body;
-        card.appendChild(body);
-
-        if (currentUserId && review.user_id === currentUserId) {
+        if (isOwner) {
           const deleteBtn = document.createElement("button");
           deleteBtn.type = "button";
           deleteBtn.className = "delete-review-btn";
@@ -2283,55 +2256,26 @@ async function initMyReviewsPage() {
 
     for (const review of allReviews) {
       const g = details[review.game_id] || {};
-      const card = document.createElement("div");
-      card.className = "review-card my-reviews-card";
 
-      const gameLink = document.createElement("a");
-      gameLink.href = "game.html?id=" + review.game_id;
-      gameLink.className = "my-reviews-card__game-link";
-
-      if (g.background_image) {
-        const thumb = document.createElement("img");
-        thumb.className = "my-reviews-card__thumb";
-        thumb.src = g.background_image;
-        thumb.alt = g.name || "Game";
-        thumb.loading = "lazy";
-        thumb.onerror = function() { this.style.display = "none"; };
-        gameLink.appendChild(thumb);
+      let gameLinkHtml = "";
+      if (g.background_image || g.name) {
+        gameLinkHtml = `<a href="game.html?id=${review.game_id}" class="my-reviews-card__game-link">
+          ${g.background_image ? `<img class="my-reviews-card__thumb" src="${g.background_image}" alt="${g.name || "Game"}" loading="lazy" />` : ""}
+          <span class="my-reviews-card__game-name">${g.name || "Game"}</span>
+        </a>`;
       }
 
-      const gameNameEl = document.createElement("span");
-      gameNameEl.className = "my-reviews-card__game-name";
-      gameNameEl.textContent = g.name || "Game";
-      gameLink.appendChild(gameNameEl);
-
-      card.appendChild(gameLink);
-
-      const header = document.createElement("div");
-      header.className = "review-card__header";
-
-      const authorLink = buildAuthorLink(review);
-      header.appendChild(authorLink);
-
-      const date = document.createElement("span");
-      date.className = "review-card__date";
-      date.textContent = formatDate(new Date(review.created_at).getTime());
-      header.appendChild(date);
-
-      card.appendChild(header);
-
-      const starsEl = renderStaticStars(review.rating);
-      card.appendChild(starsEl);
-
-      const reviewTitle = document.createElement("div");
-      reviewTitle.className = "review-card__title";
-      reviewTitle.textContent = review.title;
-      card.appendChild(reviewTitle);
-
-      const body = document.createElement("div");
-      body.className = "review-card__body";
-      body.textContent = review.body;
-      card.appendChild(body);
+      const card = document.createElement("div");
+      card.className = "review-card my-reviews-card";
+      card.innerHTML = `
+        ${gameLinkHtml}
+        <div class="review-card__header">
+          ${buildAuthorLink(review)}
+          <span class="review-card__date">${formatDate(new Date(review.created_at).getTime())}</span>
+        </div>
+        ${renderStaticStars(review.rating).outerHTML}
+        <div class="review-card__title">${review.title}</div>
+        <div class="review-card__body">${review.body}</div>`;
 
       const deleteBtn = document.createElement("button");
       deleteBtn.type = "button";

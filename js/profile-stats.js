@@ -39,44 +39,64 @@ async function countRows(table, userId) {
 
 async function loadProfile() {
   try {
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) {
-      console.warn("Profile: not signed in");
+    const urlParams = new URLSearchParams(window.location.search);
+    const usernameParam = urlParams.get("username");
+
+    let profile = null;
+
+    if (usernameParam) {
+      // Public profile: fetch by username
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("id, username, created_at")
+        .eq("username", usernameParam)
+        .maybeSingle();
+
+      if (error) throw error;
+      profile = data;
+    } else {
+      // Own profile: fetch by auth user
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError || !user) {
+        console.warn("Profile: not signed in");
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("id, username, created_at")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      if (error) throw error;
+      profile = data;
+    }
+
+    if (!profile) {
+      setText(els.username, "User not found");
       return;
     }
 
-    // Fetch profile + counts in parallel
-    const [profileResult, played, favorite, lists, reviews] = await Promise.all([
-      supabase
-        .from("profiles")
-        .select("username, created_at")
-        .eq("id", user.id)
-        .maybeSingle(),
-      countRows("played_games", user.id),
-      countRows("favorites",    user.id),
-      countRows("lists",        user.id),
-      countRows("reviews",      user.id),
-    ]);
+    const name = profile.username || "User";
+    setText(els.username, name);
+    setText(els.joined, formatJoinDate(profile.created_at));
 
-    // Profile data
-    if (profileResult.error) throw profileResult.error;
-
-    const profile = profileResult.data;
-    if (profile) {
-      const name = profile.username || user.email?.split("@")[0] || "User";
-      setText(els.username, name);
-      setText(els.joined, formatJoinDate(profile.created_at));
-
-      const avatar = document.querySelector(".profile-avatar__img");
-      if (avatar) avatar.src = avatarUrl(name);
-    }
+    const avatar = document.querySelector(".profile-avatar__img");
+    if (avatar) avatar.src = avatarUrl(name);
 
     // Stat counts
+    const [played, favorite, lists, reviews] = await Promise.all([
+      countRows("played_games", profile.id),
+      countRows("favorites",    profile.id),
+      countRows("lists",        profile.id),
+      countRows("reviews",      profile.id),
+    ]);
+
     setText(els.played,   played);
     setText(els.favorite, favorite);
     setText(els.lists,    lists);
     setText(els.reviews,  reviews);
-    setText(els.diary,    0); // Not yet implemented
+    setText(els.diary,    0);
 
   } catch (err) {
     console.error("Failed to load profile:", err.message);
