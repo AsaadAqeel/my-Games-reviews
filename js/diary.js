@@ -35,7 +35,7 @@ function renderEntry(game) {
   div.className = "diary-entry";
   div.innerHTML = `
     <div class="diary-entry__info">
-      <div class="diary-entry__title">${game.game_title || "Unknown game"}</div>
+      <div class="diary-entry__title">${game.game_name || "Unknown Game"}</div>
       <div class="diary-entry__time">${formatTime(game.created_at)}</div>
     </div>`;
   return div;
@@ -72,7 +72,7 @@ async function loadDiary() {
 
     const { data, error } = await supabase
       .from("played_games")
-      .select("game_title, created_at")
+      .select("game_name, created_at")
       .eq("user_id", user.id)
       .gte("created_at", start)
       .lt("created_at", end)
