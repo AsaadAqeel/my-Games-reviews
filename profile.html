@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Profile - Checkpoint</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg?v=2">
+  <meta name="theme-color" content="#141417">
+  <style>
+    .profile-page {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: clamp(24px, 5vw, 48px) 0 clamp(32px, 6vw, 56px);
+    }
+
+    /* Avatar */
+    .profile-avatar {
+      position: relative;
+      width: 110px;
+      height: 110px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), var(--accent-hover));
+      padding: 3px;
+      margin-bottom: 1.25rem;
+      flex-shrink: 0;
+    }
+
+    .profile-avatar__inner {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      background: var(--bg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    .profile-avatar__img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 50%;
+    }
+
+    .profile-avatar__placeholder {
+      color: var(--text-muted);
+      font-size: 2.5rem;
+      line-height: 1;
+      user-select: none;
+    }
+
+    /* Username */
+    .profile-username {
+      font-family: "Space Grotesk", "Inter", sans-serif;
+      font-size: clamp(1.5rem, 4vw, 2rem);
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: -0.02em;
+      margin-bottom: 0.35rem;
+      text-align: center;
+    }
+
+    .profile-joined {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      margin-bottom: clamp(24px, 4vw, 40px);
+      text-align: center;
+    }
+
+    /* Stats Card */
+    .profile-stats {
+      width: 100%;
+      max-width: 420px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    .profile-stat-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.9rem 1.25rem;
+      text-decoration: none;
+      color: inherit;
+      transition: background var(--transition), border-color var(--transition);
+      cursor: pointer;
+    }
+
+    .profile-stat-row:not(:last-child) {
+      border-bottom: 1px solid var(--border);
+    }
+
+    .profile-stat-row:hover {
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    .profile-stat-row:focus-visible {
+      outline: none;
+      box-shadow: var(--focus-ring);
+      border-radius: 2px;
+    }
+
+    .profile-stat-row__label {
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: var(--text-muted);
+      transition: color var(--transition);
+    }
+
+    .profile-stat-row:hover .profile-stat-row__label {
+      color: var(--text);
+    }
+
+    .profile-stat-row__value {
+      font-family: "Space Grotesk", "Inter", sans-serif;
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: -0.01em;
+      transition: color var(--transition);
+    }
+
+    .profile-stat-row:hover .profile-stat-row__value {
+      color: var(--accent);
+    }
+
+    .profile-stat-row__arrow {
+      margin-left: 0.5rem;
+      color: var(--text-muted);
+      opacity: 0;
+      transform: translateX(-4px);
+      transition: opacity var(--transition), transform var(--transition), color var(--transition);
+      flex-shrink: 0;
+    }
+
+    .profile-stat-row:hover .profile-stat-row__arrow {
+      opacity: 1;
+      transform: translateX(0);
+      color: var(--accent);
+    }
+
+    /* Guest prompt */
+    .guest-prompt {
+      display: none;
+      text-align: center;
+      padding: 3rem 1.5rem;
+      max-width: 400px;
+      margin: 0 auto 2rem;
+    }
+
+    .guest-prompt.is-visible {
+      display: block;
+    }
+
+    .guest-prompt__icon {
+      color: var(--text-muted);
+      margin-bottom: 1rem;
+    }
+
+    .guest-prompt__title {
+      font-family: "Space Grotesk", "Inter", sans-serif;
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 0.5rem;
+    }
+
+    .guest-prompt__text {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+      margin-bottom: 1.5rem;
+    }
+
+    .guest-prompt__actions {
+      display: flex;
+      gap: 0.65rem;
+      justify-content: center;
+    }
+
+    .guest-prompt__btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0.6rem 1.5rem;
+      border-radius: var(--radius-sm);
+      font-family: inherit;
+      font-size: 0.88rem;
+      font-weight: 600;
+      text-decoration: none;
+      cursor: pointer;
+      min-height: 44px;
+      transition: background var(--transition), transform var(--transition), box-shadow var(--transition), color var(--transition);
+    }
+
+    .guest-prompt__btn--primary {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+    }
+
+    .guest-prompt__btn--primary:hover {
+      background: var(--accent-hover);
+      color: #fff;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 14px rgba(229, 9, 20, 0.35);
+    }
+
+    .guest-prompt__btn--ghost {
+      background: transparent;
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    .guest-prompt__btn--ghost:hover {
+      background: rgba(255, 255, 255, 0.05);
+      border-color: #3a3a3a;
+      color: var(--text);
+    }
+
+    .profile-content[data-auth="guest"] ~ .profile-page .profile-avatar,
+    .profile-content[data-auth="guest"] ~ .profile-page .profile-username,
+    .profile-content[data-auth="guest"] ~ .profile-page .profile-joined,
+    .profile-content[data-auth="guest"] ~ .profile-page .profile-stats {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="container">
+      <a href="index.html" class="site-logo">Check<span>point</span></a>
+      <div class="search-bar" role="search">
+        <label for="search-input" class="sr-only" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);">Search games</label>
+        <input type="search" id="search-input" placeholder="Search games..." autocomplete="off">
+        <button type="button" id="search-btn" aria-label="Search"><span class="search-btn__text">Search</span><svg class="search-btn__icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></button>
+      </div>
+      <button type="button" id="nav-toggle" class="nav-toggle" aria-label="Menu" aria-expanded="false" aria-controls="main-nav">
+        <span class="nav-toggle__bar"></span>
+        <span class="nav-toggle__bar"></span>
+        <span class="nav-toggle__bar"></span>
+      </button>
+      <nav id="main-nav" class="main-nav" aria-label="Main navigation">
+        <a href="index.html" class="main-nav__link">Home</a>
+        <a href="games.html" class="main-nav__link">All Games</a>
+        <a href="played.html" class="main-nav__link">Played</a>
+        <a href="favorites.html" class="main-nav__link">Favorites</a>
+        <a href="lists.html" class="main-nav__link">Lists</a>
+        <a href="my-reviews.html" class="main-nav__link">My Reviews</a>
+        <div id="auth-user-badge" class="auth-user-badge" style="display:none;">
+          <button type="button" class="auth-user-badge__trigger" aria-haspopup="true" aria-expanded="false">
+            <span class="auth-user-badge__avatar">&#128100;</span>
+            <span class="auth-user-badge__name profile-name-display"></span>
+          </button>
+          <div class="profile-dropdown">
+            <a href="profile.html" class="profile-dropdown__item">My Profile</a>
+            <a href="settings.html" class="profile-dropdown__item">Settings</a>
+            <button type="button" class="profile-dropdown__item profile-dropdown__item--signout" data-auth-signout>Sign Out</button>
+          </div>
+        </div>
+        <a href="auth.html" class="main-nav__auth">Sign up</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container profile-content">
+
+    <!-- Guest Prompt -->
+    <div class="guest-prompt" data-auth="guest">
+      <svg class="guest-prompt__icon" xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+        <circle cx="12" cy="7" r="4"/>
+      </svg>
+      <h2 class="guest-prompt__title">Sign in to view your profile</h2>
+      <p class="guest-prompt__text">Log in or create an account to see your gaming stats, reviews, and activity.</p>
+      <div class="guest-prompt__actions">
+        <a href="auth.html" class="guest-prompt__btn guest-prompt__btn--primary">Log in</a>
+        <a href="auth.html?tab=signup" class="guest-prompt__btn guest-prompt__btn--ghost">Sign up</a>
+      </div>
+    </div>
+
+    <!-- Profile Page -->
+    <div class="profile-page">
+
+      <!-- Header: Avatar + Username -->
+      <div class="profile-avatar">
+        <div class="profile-avatar__inner">
+          <img
+            class="profile-avatar__img"
+            src="https://api.dicebear.com/9.x/avataaars/svg?seed=Checkpoint&backgroundColor=b6e3f4"
+            alt="Profile avatar"
+          />
+        </div>
+      </div>
+      <h1 class="profile-username profile-name-display">Username</h1>
+      <p class="profile-joined">Joined January 2024</p>
+
+      <!-- Stats Section -->
+      <div class="profile-stats">
+        <a href="played.html" class="profile-stat-row" aria-label="Played games">
+          <span class="profile-stat-row__label">Played</span>
+          <span class="profile-stat-row__value">120</span>
+          <svg class="profile-stat-row__arrow" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>
+        </a>
+        <a href="favorites.html" class="profile-stat-row" aria-label="Favorite games">
+          <span class="profile-stat-row__label">Favorite</span>
+          <span class="profile-stat-row__value">34</span>
+          <svg class="profile-stat-row__arrow" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>
+        </a>
+        <a href="lists.html" class="profile-stat-row" aria-label="Game lists">
+          <span class="profile-stat-row__label">Lists</span>
+          <span class="profile-stat-row__value">8</span>
+          <svg class="profile-stat-row__arrow" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>
+        </a>
+        <a href="diary.html" class="profile-stat-row" aria-label="Game diary">
+          <span class="profile-stat-row__label">Diary</span>
+          <span class="profile-stat-row__value">45</span>
+          <svg class="profile-stat-row__arrow" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>
+        </a>
+        <a href="my-reviews.html" class="profile-stat-row" aria-label="User reviews">
+          <span class="profile-stat-row__label">Reviews</span>
+          <span class="profile-stat-row__value">22</span>
+          <svg class="profile-stat-row__arrow" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>
+        </a>
+      </div>
+
+    </div>
+
+  </main>
+
+  <footer>
+    <div class="container">
+      <p>Game data powered by <a href="https://rawg.io" target="_blank" rel="noopener noreferrer">RAWG</a> &mdash; <a href="https://rawg.io" target="_blank" rel="noopener noreferrer">https://rawg.io</a></p>
+    </div>
+  </footer>
+
+  <script src="js/profile-menu.js?v=1" defer></script>
+  <script type="module" src="js/auth-guard.js?v=4.1"></script>
+  <script type="module" src="js/app.js?v=4.0"></script>
+</body>
+</html>
