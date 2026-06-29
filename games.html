@@ -33,7 +33,7 @@
 
         <div id="auth-user-badge" class="auth-user-badge" style="display:none;">
           <button type="button" class="auth-user-badge__trigger" aria-haspopup="true" aria-expanded="false">
-            <span class="auth-user-badge__avatar">👤</span>
+            <span class="auth-user-badge__avatar"></span>
             <span class="auth-user-badge__name profile-name-display"></span>
           </button>
           <div class="profile-dropdown">
@@ -97,5 +97,9 @@
   <script src="js/profile-menu.js?v=1" defer></script>
   <script type="module" src="js/auth-guard.js?v=4.1"></script>
   <script type="module" src="js/app.js?v=4.0"></script>
+  <script type="module">
+    import { initAvatar } from "./js/avatar.js";
+    initAvatar();
+  </script>
 </body>
 </html>

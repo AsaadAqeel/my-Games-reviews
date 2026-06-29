@@ -33,7 +33,7 @@
 
         <div id="auth-user-badge" class="auth-user-badge" style="display:none;">
           <button type="button" class="auth-user-badge__trigger" aria-haspopup="true" aria-expanded="false">
-            <span class="auth-user-badge__avatar">&#128100;</span>
+            <span class="auth-user-badge__avatar"></span>
             <span class="auth-user-badge__name profile-name-display"></span>
           </button>
           <div class="profile-dropdown">
@@ -67,6 +67,27 @@
       <section class="settings-group">
         <h2 class="settings-group__heading">Account</h2>
         <div class="settings-card">
+          <div class="settings-row settings-row--avatar" data-auth="user">
+            <div class="settings-row__info">
+              <span class="settings-row__label">Profile picture</span>
+              <span class="settings-row__desc">PNG, JPG, or WebP. Max 2 MB.</span>
+            </div>
+            <div class="avatar-upload">
+              <div class="avatar-upload__preview" id="avatar-preview"></div>
+              <div class="avatar-upload__controls">
+                <label class="avatar-upload__label" for="avatar-file-input" tabindex="0" role="button">Upload new picture</label>
+                <input type="file" id="avatar-file-input" accept="image/png,image/jpeg,image/webp" class="sr-only" aria-label="Choose profile picture">
+                <button type="button" class="avatar-upload__remove" id="avatar-remove-btn" style="display:none;">Remove photo</button>
+              </div>
+              <div class="avatar-upload__status" id="avatar-status" aria-live="polite"></div>
+            </div>
+          </div>
+          <div class="settings-row settings-row--guest-prompt" data-auth="guest">
+            <div class="settings-row__info">
+              <span class="settings-row__label">Profile picture</span>
+              <span class="settings-row__desc">Sign in to set a picture.</span>
+            </div>
+          </div>
           <div class="settings-row">
             <div class="settings-row__info">
               <span class="settings-row__label">Email</span>
@@ -148,6 +169,168 @@
   <script type="module" src="js/app.js?v=4.0"></script>
   <script type="module">
     import { supabase } from "./js/supabase-client.js";
+    import { initAvatar, renderAvatar, getUserProfile } from "./js/avatar.js";
+
+    initAvatar();
+
+    const ALLOWED_TYPES = ["image/png", "image/jpeg", "image/webp"];
+    const MAX_SIZE = 2 * 1024 * 1024;
+
+    const previewEl = document.getElementById("avatar-preview");
+    const fileInput = document.getElementById("avatar-file-input");
+    const removeBtn = document.getElementById("avatar-remove-btn");
+    const statusEl = document.getElementById("avatar-status");
+    const labelEl = document.querySelector(".avatar-upload__label");
+
+    let currentProfile = null;
+    let isBusy = false;
+
+    function setStatus(msg, type) {
+      statusEl.textContent = msg;
+      statusEl.className = "avatar-upload__status" + (type ? " avatar-upload__status--" + type : "");
+    }
+
+    function setBusy(busy) {
+      isBusy = busy;
+      fileInput.disabled = busy;
+      removeBtn.disabled = busy;
+      labelEl.style.pointerEvents = busy ? "none" : "";
+      labelEl.style.opacity = busy ? "0.5" : "";
+    }
+
+    async function loadProfile() {
+      const { user, profile } = await getUserProfile();
+      if (!profile) return;
+      currentProfile = profile;
+
+      renderAvatar(previewEl, profile, { size: 96 });
+      removeBtn.style.display = profile.avatar_url ? "" : "none";
+      setStatus("");
+    }
+
+    function getExtension(file) {
+      if (file.type === "image/png") return "png";
+      if (file.type === "image/jpeg") return "jpg";
+      if (file.type === "image/webp") return "webp";
+      return "png";
+    }
+
+    fileInput.addEventListener("change", async (e) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      fileInput.value = "";
+
+      if (!ALLOWED_TYPES.includes(file.type)) {
+        setStatus("Use a PNG, JPG, or WebP image.", "error");
+        return;
+      }
+      if (file.size > MAX_SIZE) {
+        setStatus("That image is over 2 MB \u2014 pick a smaller one.", "error");
+        return;
+      }
+
+      setBusy(true);
+      setStatus("");
+
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) {
+        setBusy(false);
+        return;
+      }
+
+      const ext = getExtension(file);
+      const path = `${user.id}/avatar.${ext}`;
+
+      const previewUrl = URL.createObjectURL(file);
+      const img = previewEl.querySelector("img");
+      if (img) {
+        img.src = previewUrl;
+      } else {
+        previewEl.innerHTML = "";
+        const newImg = document.createElement("img");
+        newImg.src = previewUrl;
+        newImg.alt = "Avatar preview";
+        newImg.className = "avatar-preview__img";
+        newImg.style.width = "96px";
+        newImg.style.height = "96px";
+        previewEl.appendChild(newImg);
+      }
+
+      const { error: uploadError } = await supabase.storage
+        .from("avatars")
+        .upload(path, file, {
+          upsert: true,
+          contentType: file.type,
+          cacheControl: "3600",
+        });
+
+      if (uploadError) {
+        setStatus("Couldn't upload right now. Check your connection and try again.", "error");
+        setBusy(false);
+        return;
+      }
+
+      const { error: updateError } = await supabase
+        .from("profiles")
+        .update({
+          avatar_url: path,
+          avatar_updated_at: new Date().toISOString(),
+        })
+        .eq("id", user.id);
+
+      if (updateError) {
+        setStatus("Couldn't upload right now. Check your connection and try again.", "error");
+        setBusy(false);
+        return;
+      }
+
+      currentProfile = { ...currentProfile, avatar_url: path, avatar_updated_at: new Date().toISOString() };
+      removeBtn.style.display = "";
+      setStatus("Picture updated.", "success");
+      setBusy(false);
+
+      const { renderNavAvatar } = await import("./js/avatar.js");
+      renderNavAvatar();
+    });
+
+    removeBtn.addEventListener("click", async () => {
+      if (isBusy) return;
+
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user || !currentProfile?.avatar_url) return;
+
+      setBusy(true);
+      setStatus("");
+
+      await supabase.storage.from("avatars").remove([currentProfile.avatar_url]);
+
+      const { error } = await supabase
+        .from("profiles")
+        .update({
+          avatar_url: null,
+          avatar_updated_at: new Date().toISOString(),
+        })
+        .eq("id", user.id);
+
+      if (error) {
+        setStatus("Couldn't upload right now. Check your connection and try again.", "error");
+        setBusy(false);
+        return;
+      }
+
+      currentProfile = { ...currentProfile, avatar_url: null, avatar_updated_at: new Date().toISOString() };
+      renderAvatar(previewEl, currentProfile, { size: 96 });
+      removeBtn.style.display = "none";
+      setStatus("");
+      setBusy(false);
+
+      const { renderNavAvatar } = await import("./js/avatar.js");
+      renderNavAvatar();
+    });
 
     async function loadSettings() {
       const { data: { session } } = await supabase.auth.getSession();
@@ -168,6 +351,7 @@
     }
 
     loadSettings();
+    loadProfile();
   </script>
 </body>
 </html>
