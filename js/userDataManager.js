@@ -73,6 +73,28 @@ export async function fetchTable(tableName, opts = {}) {
   return { data: data || [] };
 }
 
+export async function fetchTablePublic(tableName, opts = {}) {
+  let query = supabase.from(tableName).select(opts.select || "*");
+
+  if (opts.filters) {
+    for (const [col, val] of Object.entries(opts.filters)) {
+      query = query.eq(col, val);
+    }
+  }
+
+  const orderCol = opts.order || "created_at";
+  query = query.order(orderCol, { ascending: opts.ascending ?? false });
+
+  const { data, error } = await query;
+
+  if (error) {
+    console.error(`fetchTablePublic(${tableName}) error:`, error.message);
+    return { data: [], error: `Failed to load ${tableName}.` };
+  }
+
+  return { data: data || [] };
+}
+
 // ===================== GENERIC INSERT =====================
 
 /**

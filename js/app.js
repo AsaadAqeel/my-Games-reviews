@@ -8,7 +8,7 @@ import {
   computeAverage, computeAllAverages,
   fetchLists, createList, renameList, deleteList,
   fetchListGames, addGameToList, removeGameFromList,
-  fetchTable, remove,
+  fetchTable, fetchTablePublic, remove,
   getCurrentUser
 } from "./userDataManager.js";
 
@@ -1824,17 +1824,28 @@ async function initPlayedPage() {
   const gridEl = document.getElementById("played-grid");
   const sortSelect = document.getElementById("played-sort");
 
-  const user = await ensureAuth();
-  if (!user) {
-    if (gridEl) gridEl.innerHTML = "";
-    return;
+  const urlParams = new URLSearchParams(window.location.search);
+  const targetUserId = urlParams.get("user_id");
+
+  let userId;
+  if (targetUserId) {
+    userId = targetUserId;
+  } else {
+    const user = await ensureAuth();
+    if (!user) {
+      if (gridEl) gridEl.innerHTML = "";
+      return;
+    }
+    userId = user.id;
   }
 
   let currentSort = "recent";
 
   async function render() {
-    const { data: played } = await fetchTable("played_games");
-    let list = played || [];
+    const result = targetUserId
+      ? await fetchTablePublic("played_games", { filters: { user_id: userId } })
+      : await fetchTable("played_games");
+    let list = result.data || [];
 
     gridEl.innerHTML = "";
 
@@ -1938,16 +1949,28 @@ async function initPlayedPage() {
 async function initFavoritesPage() {
   const gridEl = document.getElementById("favorites-grid");
 
-  const user = await ensureAuth();
-  if (!user) return;
+  const urlParams = new URLSearchParams(window.location.search);
+  const targetUserId = urlParams.get("user_id");
+
+  let userId;
+  if (targetUserId) {
+    userId = targetUserId;
+  } else {
+    const user = await ensureAuth();
+    if (!user) return;
+    userId = user.id;
+  }
 
   async function render() {
-    const { data: favorites, error } = await fetchTable("favorites");
+    const result = targetUserId
+      ? await fetchTablePublic("favorites", { filters: { user_id: userId } })
+      : await fetchTable("favorites");
+    const favorites = result.data || [];
     gridEl.innerHTML = "";
 
-    if (error) {
+    if (result.error) {
       showEmpty(gridEl, "Failed to load favorites. Please try again.");
-      console.error(error);
+      console.error(result.error);
       return;
     }
 
@@ -2023,20 +2046,28 @@ async function initFavoritesPage() {
 async function initListsPage() {
   const listsContainer = document.getElementById("lists-container");
 
-  const user = await ensureAuth();
-  if (!user) {
-    if (listsContainer) listsContainer.innerHTML = "";
-    return;
+  const urlParams = new URLSearchParams(window.location.search);
+  const targetUserId = urlParams.get("user_id");
+
+  let userId;
+  if (targetUserId) {
+    userId = targetUserId;
+  } else {
+    const user = await ensureAuth();
+    if (!user) {
+      if (listsContainer) listsContainer.innerHTML = "";
+      return;
+    }
+    userId = user.id;
   }
 
   let selectedListId = null;
 
   async function render() {
-    const user = await getCurrentUser();
-    if (!user) return;
-
-    const { data: lists } = await fetchLists();
-    const allLists = lists || [];
+    const result = targetUserId
+      ? await fetchTablePublic("lists", { filters: { user_id: userId } })
+      : await fetchLists();
+    const allLists = result.data || [];
     listsContainer.innerHTML = "";
 
     // Create New List button
@@ -2235,12 +2266,26 @@ async function initListsPage() {
 async function initMyReviewsPage() {
   const container = document.getElementById("my-reviews-list");
 
-  const user = await ensureAuth();
-  if (!user) return;
+  const urlParams = new URLSearchParams(window.location.search);
+  const targetUserId = urlParams.get("user_id");
+
+  let userId;
+  if (targetUserId) {
+    userId = targetUserId;
+  } else {
+    const user = await ensureAuth();
+    if (!user) return;
+    userId = user.id;
+  }
 
   async function render() {
-    const { data: reviews } = await fetchAllUserReviews();
-    const allReviews = reviews || [];
+    const result = targetUserId
+      ? await fetchTablePublic("reviews", {
+          select: "*, profiles(username, avatar_url)",
+          filters: { user_id: userId }
+        })
+      : await fetchAllUserReviews();
+    const allReviews = result.data || [];
     container.innerHTML = "";
 
     if (allReviews.length === 0) {
@@ -2253,6 +2298,7 @@ async function initMyReviewsPage() {
 
     const gameIds = allReviews.map(r => r.game_id);
     const details = await fetchGameDetails(gameIds);
+    const currentAuth = await getCurrentUser();
 
     for (const review of allReviews) {
       const g = details[review.game_id] || {};
@@ -2277,19 +2323,21 @@ async function initMyReviewsPage() {
         <div class="review-card__title">${review.title}</div>
         <div class="review-card__body">${review.body}</div>`;
 
-      const deleteBtn = document.createElement("button");
-      deleteBtn.type = "button";
-      deleteBtn.className = "delete-review-btn";
-      deleteBtn.textContent = "Delete My Review";
-      deleteBtn.addEventListener("click", async () => {
-        if (confirm("Delete this review?")) {
-          deleteBtn.disabled = true;
-          deleteBtn.textContent = "Deleting...";
-          await deleteReviewDb(review.id);
-          render();
-        }
-      });
-      card.appendChild(deleteBtn);
+      if (currentAuth && review.user_id === currentAuth.id) {
+        const deleteBtn = document.createElement("button");
+        deleteBtn.type = "button";
+        deleteBtn.className = "delete-review-btn";
+        deleteBtn.textContent = "Delete My Review";
+        deleteBtn.addEventListener("click", async () => {
+          if (confirm("Delete this review?")) {
+            deleteBtn.disabled = true;
+            deleteBtn.textContent = "Deleting...";
+            await deleteReviewDb(review.id);
+            render();
+          }
+        });
+        card.appendChild(deleteBtn);
+      }
 
       container.appendChild(card);
     }

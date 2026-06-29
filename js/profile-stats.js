@@ -14,6 +14,20 @@ function setText(el, value) {
   if (el) el.textContent = value;
 }
 
+function setStatLinks(profileId) {
+  const links = {
+    "played-link":   `played.html?user_id=${profileId}`,
+    "favorite-link": `favorites.html?user_id=${profileId}`,
+    "lists-link":    `lists.html?user_id=${profileId}`,
+    "diary-link":    `diary.html?user_id=${profileId}`,
+    "reviews-link":  `my-reviews.html?user_id=${profileId}`,
+  };
+  Object.keys(links).forEach((id) => {
+    const el = document.getElementById(id);
+    if (el) el.href = links[id];
+  });
+}
+
 function formatJoinDate(dateStr) {
   if (!dateStr) return "";
   const d = new Date(dateStr);
@@ -80,6 +94,7 @@ async function loadProfile() {
     const name = profile.username || "User";
     setText(els.username, name);
     setText(els.joined, formatJoinDate(profile.created_at));
+    setStatLinks(profile.id);
 
     const avatar = document.querySelector(".profile-avatar__img");
     if (avatar) avatar.src = avatarUrl(name);

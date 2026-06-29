@@ -67,11 +67,20 @@ function renderError(msg) {
 
 async function loadDiary() {
   try {
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) {
-      loadingEl.remove();
-      console.warn("Diary: not signed in");
-      return;
+    const urlParams = new URLSearchParams(window.location.search);
+    const targetUserId = urlParams.get("user_id");
+
+    let userId;
+    if (targetUserId) {
+      userId = targetUserId;
+    } else {
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError || !user) {
+        loadingEl.remove();
+        console.warn("Diary: not signed in");
+        return;
+      }
+      userId = user.id;
     }
 
     dateEl.textContent = formatDate(new Date());
@@ -81,7 +90,7 @@ async function loadDiary() {
     const { data, error } = await supabase
       .from("played_games")
       .select("game_id, game_name, game_image, created_at")
-      .eq("user_id", user.id)
+      .eq("user_id", userId)
       .gte("created_at", start)
       .lt("created_at", end)
       .order("created_at", { ascending: false });
