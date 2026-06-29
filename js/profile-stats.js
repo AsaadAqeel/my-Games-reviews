@@ -51,6 +51,28 @@ async function countRows(table, userId) {
   return count ?? 0;
 }
 
+async function getDiaryStats(userId) {
+  const year = new Date().getFullYear();
+  const yearStart = `${year}-01-01T00:00:00Z`;
+  const yearEnd = `${year}-12-31T23:59:59Z`;
+
+  const [total, yearCount] = await Promise.all([
+    countRows("played_games", userId),
+    supabase
+      .from("played_games")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", userId)
+      .gte("created_at", yearStart)
+      .lte("created_at", yearEnd)
+      .then(({ count, error }) => {
+        if (error) throw error;
+        return count ?? 0;
+      }),
+  ]);
+
+  return { total, year, yearCount };
+}
+
 async function loadProfile() {
   try {
     const urlParams = new URLSearchParams(window.location.search);
@@ -100,18 +122,19 @@ async function loadProfile() {
     if (avatar) avatar.src = avatarUrl(name);
 
     // Stat counts
-    const [played, favorite, lists, reviews] = await Promise.all([
+    const [played, favorite, lists, reviews, diary] = await Promise.all([
       countRows("played_games", profile.id),
       countRows("favorites",    profile.id),
       countRows("lists",        profile.id),
       countRows("reviews",      profile.id),
+      getDiaryStats(profile.id),
     ]);
 
     setText(els.played,   played);
     setText(els.favorite, favorite);
     setText(els.lists,    lists);
     setText(els.reviews,  reviews);
-    setText(els.diary,    0);
+    setText(els.diary,    `${diary.total} / ${diary.yearCount} this year`);
 
   } catch (err) {
     console.error("Failed to load profile:", err.message);
