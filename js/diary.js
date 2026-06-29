@@ -1,4 +1,5 @@
 import { supabase } from "./supabase-client.js";
+import { resolveUser } from "./user-resolver.js";
 
 const dateEl    = document.getElementById("diary-date");
 const listEl    = document.getElementById("diary-list");
@@ -67,20 +68,11 @@ function renderError(msg) {
 
 async function loadDiary() {
   try {
-    const urlParams = new URLSearchParams(window.location.search);
-    const targetUserId = urlParams.get("user_id");
-
-    let userId;
-    if (targetUserId) {
-      userId = targetUserId;
-    } else {
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
-      if (authError || !user) {
-        loadingEl.remove();
-        console.warn("Diary: not signed in");
-        return;
-      }
-      userId = user.id;
+    const profile = await resolveUser();
+    if (!profile) {
+      loadingEl.remove();
+      console.warn("Diary: user not found");
+      return;
     }
 
     dateEl.textContent = formatDate(new Date());
@@ -90,7 +82,7 @@ async function loadDiary() {
     const { data, error } = await supabase
       .from("played_games")
       .select("game_id, game_name, game_image, created_at")
-      .eq("user_id", userId)
+      .eq("user_id", profile.id)
       .gte("created_at", start)
       .lt("created_at", end)
       .order("created_at", { ascending: false });
