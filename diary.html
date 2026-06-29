@@ -59,6 +59,21 @@
       background: var(--bg-surface);
     }
 
+    .diary-entry__thumb--fallback {
+      background: var(--bg-surface);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .diary-entry__thumb--fallback::after {
+      content: "";
+      width: 16px;
+      height: 16px;
+      background: var(--border);
+      border-radius: 3px;
+    }
+
     .diary-entry__info {
       flex: 1;
       min-width: 0;
