@@ -275,9 +275,21 @@ export async function togglePlayed(gameId, snapshot = {}) {
     return { added: false, error: "Game name is required." };
   }
 
+  const payload = {
+    game_id:      gameId,
+    game_name:    snapshot.name,
+    game_image:   snapshot.image    || null,
+    game_rating:  snapshot.rating   ?? null,
+    game_released: snapshot.released || null,
+    game_genres:  snapshot.genres   || [],
+    game_tags:    snapshot.tags     || [],
+  };
+
+  console.log("togglePlayed insert payload:", payload);
+
   const { error: insertError } = await supabase
     .from("played_games")
-    .insert({ game_id: gameId, game_name: snapshot.name });
+    .insert(payload);
 
   if (insertError) {
     console.error("togglePlayed insert error:", insertError.message);
