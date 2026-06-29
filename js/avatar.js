@@ -107,21 +107,6 @@ export async function renderNavAvatar() {
 }
 
 /**
- * Listen for auth changes and render the nav avatar when a user signs in.
- * Import this from every page that shows the nav.
- */
-export function initAvatar() {
-  supabase.auth.onAuthStateChange((event, session) => {
-    if (session?.user) {
-      renderNavAvatar();
-    } else {
-      const badgeAvatar = document.querySelector(".auth-user-badge__avatar");
-      if (badgeAvatar) badgeAvatar.innerHTML = "";
-    }
-  });
-}
-
-/**
  * Get the current user's profile data.
  * Returns { user, profile } or { user: null, profile: null }.
  */

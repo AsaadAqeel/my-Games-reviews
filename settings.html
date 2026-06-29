@@ -169,9 +169,7 @@
   <script type="module" src="js/app.js?v=4.0"></script>
   <script type="module">
     import { supabase } from "./js/supabase-client.js";
-    import { initAvatar, renderAvatar, getUserProfile } from "./js/avatar.js";
-
-    initAvatar();
+    import { renderAvatar, getUserProfile } from "./js/avatar.js";
 
     const ALLOWED_TYPES = ["image/png", "image/jpeg", "image/webp"];
     const MAX_SIZE = 2 * 1024 * 1024;

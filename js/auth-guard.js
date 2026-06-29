@@ -1,4 +1,5 @@
 import { supabase } from "./supabase-client.js";
+import { renderNavAvatar } from "./avatar.js";
 
 let currentUser = null;
 const authListeners = [];
@@ -48,10 +49,13 @@ function applyAuthUI(user) {
     if (user) {
       userBadge.style.display = "flex";
       loadProfileUsername(user);
+      renderNavAvatar();
     } else {
       userBadge.style.display = "none";
       const dropdown = userBadge.querySelector(".profile-dropdown");
       if (dropdown) dropdown.classList.remove("show");
+      const badgeAvatar = userBadge.querySelector(".auth-user-badge__avatar");
+      if (badgeAvatar) badgeAvatar.innerHTML = "";
     }
   }
 
