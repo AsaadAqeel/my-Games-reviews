@@ -270,9 +270,14 @@ export async function togglePlayed(gameId, snapshot = {}) {
     return { added: false };
   }
 
+  if (!snapshot.name) {
+    console.error("togglePlayed: game_name is missing from snapshot");
+    return { added: false, error: "Game name is required." };
+  }
+
   const { error: insertError } = await supabase
     .from("played_games")
-    .insert({ game_id: gameId });
+    .insert({ game_id: gameId, game_name: snapshot.name });
 
   if (insertError) {
     console.error("togglePlayed insert error:", insertError.message);
