@@ -1007,6 +1007,22 @@ footer a:hover { color: var(--accent-hover); }
   gap: 0.5rem;
   font-weight: 600;
   font-size: 0.9rem;
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+  transition: opacity var(--transition);
+}
+
+.review-card__author:hover {
+  opacity: 0.8;
+}
+
+.review-card__author:hover .review-card__avatar {
+  opacity: 0.75;
+}
+
+.review-card__author:visited {
+  color: inherit;
 }
 
 .review-card__avatar {

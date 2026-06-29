@@ -1588,6 +1588,31 @@ async function initGameDetail() {
 
 // ===================== REVIEWS SECTION =====================
 
+function buildAuthorLink(review) {
+  const profile = review.profiles || {};
+  const username = profile.username || review.name || "Anonymous";
+  const avatarUrl = profile.avatar_url
+    || `https://api.dicebear.com/9.x/avataaars/svg?seed=${encodeURIComponent(username)}&backgroundColor=b6e3f4`;
+
+  const link = document.createElement("a");
+  link.href = profile.username ? `profile.html?username=${encodeURIComponent(profile.username)}` : "#";
+  link.className = "review-card__author";
+
+  const avatar = document.createElement("img");
+  avatar.className = "review-card__avatar";
+  avatar.src = avatarUrl;
+  avatar.alt = username;
+  avatar.loading = "lazy";
+  avatar.onerror = function() { this.style.display = "none"; };
+  link.appendChild(avatar);
+
+  const nameSpan = document.createElement("span");
+  nameSpan.textContent = username;
+  link.appendChild(nameSpan);
+
+  return link;
+}
+
 function renderReviewsSection(container, gameId) {
   container.innerHTML = "";
 
@@ -1775,27 +1800,8 @@ function renderReviewsSection(container, gameId) {
         const header = document.createElement("div");
         header.className = "review-card__header";
 
-        const authorWrap = document.createElement("span");
-        authorWrap.className = "review-card__author";
-
-        const profile = review.profiles || {};
-        const username = profile.username || review.name || "Anonymous";
-        const avatarUrl = profile.avatar_url
-          || `https://api.dicebear.com/9.x/avataaars/svg?seed=${encodeURIComponent(username)}&backgroundColor=b6e3f4`;
-
-        const avatar = document.createElement("img");
-        avatar.className = "review-card__avatar";
-        avatar.src = avatarUrl;
-        avatar.alt = username;
-        avatar.loading = "lazy";
-        avatar.onerror = function() { this.style.display = "none"; };
-        authorWrap.appendChild(avatar);
-
-        const nameSpan = document.createElement("span");
-        nameSpan.textContent = username;
-        authorWrap.appendChild(nameSpan);
-
-        header.appendChild(authorWrap);
+        const authorLink = buildAuthorLink(review);
+        header.appendChild(authorLink);
 
         const date = document.createElement("span");
         date.className = "review-card__date";
@@ -2304,27 +2310,8 @@ async function initMyReviewsPage() {
       const header = document.createElement("div");
       header.className = "review-card__header";
 
-      const authorWrap = document.createElement("span");
-      authorWrap.className = "review-card__author";
-
-      const profile = review.profiles || {};
-      const username = profile.username || review.name || "Anonymous";
-      const avatarUrl = profile.avatar_url
-        || `https://api.dicebear.com/9.x/avataaars/svg?seed=${encodeURIComponent(username)}&backgroundColor=b6e3f4`;
-
-      const avatar = document.createElement("img");
-      avatar.className = "review-card__avatar";
-      avatar.src = avatarUrl;
-      avatar.alt = username;
-      avatar.loading = "lazy";
-      avatar.onerror = function() { this.style.display = "none"; };
-      authorWrap.appendChild(avatar);
-
-      const nameSpan = document.createElement("span");
-      nameSpan.textContent = username;
-      authorWrap.appendChild(nameSpan);
-
-      header.appendChild(authorWrap);
+      const authorLink = buildAuthorLink(review);
+      header.appendChild(authorLink);
 
       const date = document.createElement("span");
       date.className = "review-card__date";
