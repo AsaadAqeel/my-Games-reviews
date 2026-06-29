@@ -122,13 +122,19 @@ async function loadProfile() {
     if (avatar) avatar.src = avatarUrl(name);
 
     // Stat counts
-    const [played, favorite, lists, reviews, diary] = await Promise.all([
+    const [played, favorite, lists, reviews] = await Promise.all([
       countRows("played_games", profile.id),
       countRows("favorites",    profile.id),
       countRows("lists",        profile.id),
       countRows("reviews",      profile.id),
-      getDiaryStats(profile.id),
     ]);
+
+    let diary = { total: 0, yearCount: 0 };
+    try {
+      diary = await getDiaryStats(profile.id);
+    } catch (e) {
+      console.warn("Diary stats failed:", e.message);
+    }
 
     setText(els.played,   played);
     setText(els.favorite, favorite);
