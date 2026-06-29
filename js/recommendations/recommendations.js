@@ -134,9 +134,8 @@ async function generateRecommendations(renderCardFn) {
     const ranked = rankRecommendations(candidates, profile);
     const final = diversify(ranked);
 
-    const isColdStart = !hasProfile;
     if (heading) {
-      heading.textContent = isColdStart ? "Popular right now" : "Recommended for you";
+      heading.textContent = "Recommended for you";
     }
 
     if (final.length === 0) {
@@ -181,7 +180,7 @@ async function refreshRecommendations(grid, heading, refreshBtn, renderCardFn, d
     const final = diversify(ranked);
 
     if (heading) {
-      heading.textContent = hasProfile ? "Recommended for you" : "Popular right now";
+      heading.textContent = "Recommended for you";
     }
 
     const dataHash = getDataHash(data);
@@ -211,7 +210,7 @@ function renderResults(grid, results, heading, refreshBtn, renderCardFn) {
   grid.innerHTML = "";
 
   if (results.length === 0) {
-    setEmpty(grid, heading && heading.textContent === "Popular right now");
+    setEmpty(grid, false);
     if (refreshBtn) refreshBtn.style.display = "none";
     return;
   }
