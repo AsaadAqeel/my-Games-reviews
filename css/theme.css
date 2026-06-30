@@ -7,6 +7,10 @@
 /* ======================== DESIGN TOKENS ======================== */
 
 :root {
+  /* Typography scale */
+  --font-scale: 1.125;
+  --font-size-base: calc(16px * var(--font-scale));
+
   /* Color palette */
   --bg: #0d1016;
   --bg-card: #141820;
@@ -53,7 +57,7 @@ body {
   background: var(--bg);
   color: var(--text);
   font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  font-size: 14px;
+  font-size: 1rem;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -305,15 +309,15 @@ header .container {
 }
 
 .auth-user-badge__avatar {
-  width: 30px;
-  height: 30px;
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
   background: var(--accent);
   color: var(--accent-contrast);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.75rem;
+  font-size: 0.81rem;
   font-weight: 700;
 }
 
@@ -384,7 +388,7 @@ header .container {
 .featured-hero {
   position: relative;
   width: 100%;
-  min-height: clamp(240px, 34vw, 340px);
+  min-height: clamp(280px, 38vw, 400px);
   border-radius: var(--radius);
   overflow: hidden;
   margin-bottom: var(--row-gap);
@@ -418,7 +422,7 @@ header .container {
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
-  min-height: clamp(240px, 34vw, 340px);
+  min-height: clamp(280px, 38vw, 400px);
 }
 
 .featured-hero__label {
@@ -433,7 +437,7 @@ header .container {
 
 .featured-hero__title {
   font-family: "Space Grotesk", "Inter", sans-serif;
-  font-size: clamp(34px, 5.4vw, 58px);
+  font-size: clamp(2.1rem, 5.4vw, 3.6rem);
   font-weight: 700;
   letter-spacing: -0.015em;
   line-height: 1.1;
@@ -533,7 +537,7 @@ header .container {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  min-height: clamp(240px, 34vw, 340px);
+  min-height: clamp(280px, 38vw, 400px);
   justify-content: flex-end;
 }
 
@@ -587,7 +591,7 @@ header .container {
 
 .curated-section__title {
   font-family: "Space Grotesk", "Inter", sans-serif;
-  font-size: clamp(19px, 2.4vw, 26px);
+  font-size: clamp(1.2rem, 2.4vw, 1.65rem);
   font-weight: 700;
   letter-spacing: -0.015em;
   display: flex;
@@ -946,7 +950,7 @@ header .container {
 
 .game-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(clamp(150px, 20vw, 200px), 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(clamp(180px, 22vw, 240px), 1fr));
   gap: 16px;
 }
 
@@ -2088,8 +2092,8 @@ header .container {
 
 .profile-avatar {
   position: relative;
-  width: 110px;
-  height: 110px;
+  width: 120px;
+  height: 120px;
   border-radius: 50%;
   background: var(--accent);
   padding: 3px;
@@ -2632,7 +2636,7 @@ footer a:hover {
 
 @media (max-width: 640px) {
   .game-grid {
-    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
     gap: 10px;
   }
 
@@ -2645,7 +2649,7 @@ footer a:hover {
   }
 
   .featured-hero__title {
-    font-size: clamp(24px, 7vw, 36px);
+    font-size: clamp(1.5rem, 7vw, 2.25rem);
   }
 
   .featured-hero__desc {
@@ -2899,10 +2903,10 @@ textarea:focus-visible {
 /* ======================== NAV AVATAR ======================== */
 
 .auth-user-badge__avatar {
-  width: 30px;
-  height: 30px;
-  min-width: 30px;
-  min-height: 30px;
+  width: 34px;
+  height: 34px;
+  min-width: 34px;
+  min-height: 34px;
   border-radius: 50%;
   background: var(--accent);
   color: var(--accent-contrast);

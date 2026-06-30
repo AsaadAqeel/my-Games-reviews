@@ -116,7 +116,7 @@ async function loadProfile() {
     setStatLinks(profile.id);
 
     const avatarInner = document.querySelector(".profile-avatar__inner");
-    if (avatarInner) renderAvatar(avatarInner, profile, { size: 104 });
+    if (avatarInner) renderAvatar(avatarInner, profile, { size: 114 });
 
     // Stat counts
     const [played, favorite, lists, reviews] = await Promise.all([

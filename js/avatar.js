@@ -103,7 +103,7 @@ export async function renderNavAvatar() {
   const badgeAvatar = document.querySelector(".auth-user-badge__avatar");
   if (!badgeAvatar) return;
 
-  renderAvatar(badgeAvatar, profile, { size: 30 });
+  renderAvatar(badgeAvatar, profile, { size: 34 });
 }
 
 /**
